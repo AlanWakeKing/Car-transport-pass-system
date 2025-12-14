@@ -1,0 +1,25 @@
+# Backend Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.10
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib==1.7.4
+bcrypt==4.1.2
+python-multipart==0.0.6
+
+# PDF Generation
+reportlab==4.0.9
+pillow==10.2.0
+
+# Telegram Notifications
+python-telegram-bot==20.7
+
+# Utilities
+python-dotenv==1.0.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
