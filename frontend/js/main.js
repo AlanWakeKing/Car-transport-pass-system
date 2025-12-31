@@ -8,6 +8,8 @@ import { DashboardPage } from "./components/pages/Dashboard.js";
 import { PropusksPage } from "./components/pages/Propusks.js";
 import { ReferencesPage } from "./components/pages/References.js";
 import { UsersPage } from "./components/pages/Users.js";
+import { ReportsPage } from "./components/pages/Reports.js";
+import { PrintPage } from "./components/pages/Print.js";
 
 const appRoot = document.getElementById("app");
 const context = new AppContext();
@@ -16,6 +18,8 @@ const pages = {
   dashboard: new DashboardPage(context),
   propusks: new PropusksPage(context),
   references: new ReferencesPage(context),
+  print: new PrintPage(context),
+  reports: new ReportsPage(context),
   users: new UsersPage(context)
 };
 
@@ -42,6 +46,9 @@ async function showLogin() {
 }
 
 async function renderPage(name) {
+  if (shell) {
+    shell.setPage(name);
+  }
   const page = pages[name];
   if (!page) return;
   const content = await page.render();

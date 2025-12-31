@@ -1,0 +1,236 @@
+import { ENDPOINTS } from "../../config/constants.js";
+import { apiGet, downloadFile, downloadPost, handleError } from "../../api/client.js";
+import { renderStatusChip } from "../../utils/statusConfig.js";
+import { toast } from "../common/Toast.js";
+
+export class PrintPage {
+  constructor(context) {
+    this.context = context;
+    this.state = {
+      orgs: [],
+      propusks: [],
+      selectedOrg: "",
+      selectedIds: new Set()
+    };
+  }
+
+  async loadData() {
+    try {
+      const [orgs, propusks] = await Promise.all([
+        apiGet(ENDPOINTS.references.organizations),
+        apiGet(ENDPOINTS.propusks, { limit: 500 })
+      ]);
+      this.state.orgs = orgs;
+      this.state.propusks = propusks;
+    } catch (err) {
+      handleError(err);
+    }
+  }
+
+  async render() {
+    await this.loadData();
+    const node = document.createElement("div");
+    node.className = "section";
+    node.innerHTML = `
+      <div class="md-card section">
+        <div class="md-toolbar">
+          <div>
+            <p class="tag">Печать</p>
+            <h3 style="margin:0;">Пропуска</h3>
+          </div>
+        </div>
+        <div class="tabs" id="print-tabs">
+          <button class="tab active" data-tab="org">Организации</button>
+          <button class="tab" data-tab="props">Пропуска</button>
+        </div>
+        <div class="tab-panels">
+          <div class="tab-panel active" data-tab="org">
+            <div class="md-toolbar">
+              <div class="md-field" style="min-width:220px;">
+                <label>Организация</label>
+                <select class="md-select" id="org-select">
+                  <option value="">Выберите организацию</option>
+                  ${this.state.orgs.map((o) => `<option value="${o.id_org}">${o.org_name}</option>`).join("")}
+                </select>
+              </div>
+              <button class="md-btn secondary" id="print-org">
+                <span class="material-icons-round">picture_as_pdf</span>
+                PDF по организации
+              </button>
+            </div>
+            <div class="table-scroll">
+              <table class="md-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Госномер</th>
+                    <th>Марка/Модель</th>
+                    <th>ФИО</th>
+                    <th>Статус</th>
+                    <th>До</th>
+                  </tr>
+                </thead>
+                <tbody id="org-propusk-rows"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="tab-panel" data-tab="props">
+            <div class="md-toolbar">
+              <div>
+                <p class="tag">Множественный выбор</p>
+                <h4 style="margin:0;">Пропуска</h4>
+              </div>
+              <button class="md-btn secondary" id="print-selected">
+                <span class="material-icons-round">picture_as_pdf</span>
+                Печать выбранных
+              </button>
+            </div>
+            <div class="table-scroll">
+              <table class="md-table">
+                <thead>
+                  <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>ID</th>
+                    <th>Госномер</th>
+                    <th>Компания</th>
+                    <th>ФИО</th>
+                    <th>Статус</th>
+                    <th>До</th>
+                  </tr>
+                </thead>
+                <tbody id="propusk-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.renderOrgRows(node.querySelector("#org-propusk-rows"));
+    this.renderPropuskRows(node.querySelector("#propusk-rows"));
+    this.bind(node);
+    return node;
+  }
+
+  renderOrgRows(tbody) {
+    const filtered = this.state.propusks.filter((p) =>
+      this.state.selectedOrg ? String(p.id_org) === String(this.state.selectedOrg) : false
+    );
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty">Выберите организацию</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = filtered
+      .map(
+        (p) => `
+          <tr>
+            <td>${p.id_propusk}</td>
+            <td>${p.gos_id}</td>
+            <td>${p.mark_name || ""} ${p.model_name || ""}</td>
+            <td>${p.abonent_fio || "—"}</td>
+            <td>${renderStatusChip(p.status)}</td>
+            <td>${p.valid_until}</td>
+          </tr>
+        `
+      )
+      .join("");
+  }
+
+  renderPropuskRows(tbody) {
+    if (!this.state.propusks.length) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty">Нет данных</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = this.state.propusks
+      .map(
+        (p) => `
+          <tr>
+            <td><input type="checkbox" data-id="${p.id_propusk}" ${this.state.selectedIds.has(p.id_propusk) ? "checked" : ""}></td>
+            <td>${p.id_propusk}</td>
+            <td>${p.gos_id}</td>
+            <td>${p.org_name || "—"}</td>
+            <td>${p.abonent_fio || "—"}</td>
+            <td>${renderStatusChip(p.status)}</td>
+            <td>${p.valid_until}</td>
+          </tr>
+        `
+      )
+      .join("");
+  }
+
+  bind(node) {
+    const tabs = node.querySelector("#print-tabs");
+    tabs?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".tab");
+      if (!btn) return;
+      const tab = btn.dataset.tab;
+      tabs.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === tab));
+      node.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.dataset.tab === tab));
+    });
+
+    node.querySelector("#org-select")?.addEventListener("change", (e) => {
+      this.state.selectedOrg = e.target.value;
+      this.renderOrgRows(node.querySelector("#org-propusk-rows"));
+    });
+
+    node.querySelector("#print-org")?.addEventListener("click", async () => {
+      if (!this.state.selectedOrg) {
+        toast.show("Выберите организацию", "error");
+        return;
+      }
+      await this.printOrg(this.state.selectedOrg);
+    });
+
+    node.querySelector("#propusk-rows")?.addEventListener("change", (e) => {
+      const cb = e.target;
+      if (cb.type !== "checkbox") return;
+      const id = Number(cb.dataset.id);
+      if (cb.checked) this.state.selectedIds.add(id);
+      else this.state.selectedIds.delete(id);
+    });
+
+    node.querySelector("#select-all")?.addEventListener("change", (e) => {
+      const checked = e.target.checked;
+      this.state.selectedIds.clear();
+      if (checked) {
+        this.state.propusks
+          .filter((p) => p.status === "active")
+          .forEach((p) => this.state.selectedIds.add(p.id_propusk));
+      }
+      this.renderPropuskRows(node.querySelector("#propusk-rows"));
+    });
+
+    node.querySelector("#print-selected")?.addEventListener("click", async () => {
+      if (!this.state.selectedIds.size) {
+        toast.show("Выберите пропуска для печати", "info");
+        return;
+      }
+      await this.printBatch(Array.from(this.state.selectedIds));
+    });
+  }
+
+  async printBatch(ids) {
+    try {
+      await downloadPost(`${ENDPOINTS.propusks}/pdf/batch`, ids, "propusks.pdf");
+      toast.show("PDF сформирован", "success");
+    } catch (err) {
+      handleError(err);
+    }
+  }
+
+  async printOrg(orgId) {
+    try {
+      const ids = this.state.propusks
+        .filter((p) => String(p.id_org) === String(orgId) && p.status === "active")
+        .map((p) => p.id_propusk);
+      if (!ids.length) {
+        toast.show("Нет активных пропусков для этой организации", "info");
+        return;
+      }
+      await downloadPost(`${ENDPOINTS.propusks}/pdf/batch`, ids, `org_${orgId}_propusks.pdf`);
+      toast.show("PDF сформирован", "success");
+    } catch (err) {
+      handleError(err);
+    }
+  }
+}

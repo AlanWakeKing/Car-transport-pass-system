@@ -18,6 +18,7 @@ from urllib.parse import quote
 
 from propusk.service import PropuskService
 from propusk.pdf_generator import PropuskPDFGenerator
+from propusk.org_report import generate_org_report
 from auth.dependencies import (
     get_current_active_user, require_admin, 
     require_manager_controller, require_manager
@@ -382,6 +383,37 @@ def download_multiple_propusks_pdf(
         headers={
             "Content-Disposition": f"attachment; filename={filename}"
         }
+    )
+
+
+@router.get("/reports/org/{org_id}/pdf")
+def download_org_report_pdf(
+    org_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Отчёт по пропускам организации (табличный вид).
+    """
+    propusks = PropuskService.get_propusks(
+        db=db,
+        id_org=org_id,
+        limit=500
+    )
+    if not propusks:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пропуска не найдены")
+
+    # enrich
+    for p in propusks:
+        _enrich_propusk(db, p)
+
+    org_name = propusks[0].org_name if hasattr(propusks[0], "org_name") else ""
+    pdf_buffer = generate_org_report(org_name, propusks)
+    filename = f"org_{org_id}_propusks.pdf"
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 

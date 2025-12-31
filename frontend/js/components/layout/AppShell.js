@@ -5,7 +5,7 @@ export class AppShell {
     this.root = root;
     this.onNavigate = onNavigate;
     this.onLogout = onLogout;
-    this.current = "dashboard";
+    this.current = "propusks";
   }
 
   render(user) {
@@ -20,9 +20,10 @@ export class AppShell {
             </div>
           </div>
           <div class="menu" id="app-menu">
-            ${this.menuItem("dashboard", "dashboard", "Обзор")}
             ${this.menuItem("propusks", "directions_car", "Пропуска")}
             ${this.menuItem("references", "storage", "Справочники")}
+            ${this.menuItem("print", "print", "В печать")}
+            ${this.menuItem("reports", "analytics", "Отчёты")}
             ${canManageUsers(user) ? this.menuItem("users", "shield_person", "Пользователи") : ""}
           </div>
           <div class="md-divider"></div>
@@ -41,10 +42,7 @@ export class AppShell {
                 <p class="tag">Цифровой пропускной режим</p>
                 <h1 style="letter-spacing:-0.01em;">Центр управления доступом</h1>
               </div>
-              <div class="pill-switch" id="quick-switch">
-                <button data-page="dashboard" class="${this.current === "dashboard" ? "active" : ""}">Обзор</button>
-                <button data-page="propusks" class="${this.current === "propusks" ? "active" : ""}">Пропуска</button>
-              </div>
+              <div></div>
             </div>
           </header>
           <section class="content" id="content"></section>
@@ -66,7 +64,7 @@ export class AppShell {
 
   setPage(page) {
     this.current = page;
-    this.render(this.user);
+    this.updateActive();
   }
 
   mountContent(node) {
@@ -83,20 +81,17 @@ export class AppShell {
       const target = e.target.closest("[data-page]");
       if (!target) return;
       const page = target.dataset.page;
-      this.current = page;
-      this.onNavigate(page);
-    });
-
-    const switcher = this.root.querySelector("#quick-switch");
-    switcher?.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-page]");
-      if (!btn) return;
-      const page = btn.dataset.page;
-      this.current = page;
+      this.setPage(page);
       this.onNavigate(page);
     });
 
     const logout = this.root.querySelector("#logout-btn");
     logout?.addEventListener("click", () => this.onLogout());
+  }
+
+  updateActive() {
+    this.root.querySelectorAll(".menu-item").forEach((el) => {
+      el.classList.toggle("active", el.dataset.page === this.current);
+    });
   }
 }

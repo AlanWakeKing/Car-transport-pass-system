@@ -1,5 +1,5 @@
 import { ENDPOINTS } from "../../config/constants.js";
-import { apiGet, apiPost, apiDelete, handleError } from "../../api/client.js";
+import { apiGet, apiPost, apiDelete, handleError, downloadFile } from "../../api/client.js";
 import { renderStatusChip } from "../../utils/statusConfig.js";
 import { toast } from "../common/Toast.js";
 import { canControlStatus, canManagePropusks, canMarkDelete, canDownload } from "../../utils/permissions.js";
@@ -160,7 +160,7 @@ export class PropusksPage {
             await this.confirmArchive(id);
             return;
           case "pdf":
-            window.open(`${ENDPOINTS.propusks}/${id}/pdf`, "_blank");
+            await this.downloadPdf(id);
             return;
         }
         await this.loadData();
@@ -285,5 +285,14 @@ export class PropusksPage {
         handleError(err);
       }
     });
+  }
+
+  async downloadPdf(id) {
+    try {
+      await downloadFile(`${ENDPOINTS.propusks}/${id}/pdf`, `propusk_${id}.pdf`);
+      toast.show("PDF выгружен", "success");
+    } catch (err) {
+      handleError(err);
+    }
   }
 }
