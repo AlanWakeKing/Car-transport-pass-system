@@ -153,25 +153,65 @@ def seed_database():
                 "username": "manager1",
                 "password": "manager1",
                 "full_name": "Менеджер Оформитель",
-                "role": UserRole.MANAGER_CREATOR
+                "role": UserRole.MANAGER,
+                "permissions": {
+                    "view": True,
+                    "create": True,
+                    "edit": True,
+                    "delete": False,
+                    "annul": False,
+                    "mark_delete": True,
+                    "activate": True,
+                    "edit_organization": False
+                }
             },
             {
                 "username": "manager2",
                 "password": "manager2",
                 "full_name": "Менеджер Контролёр",
-                "role": UserRole.MANAGER_CONTROLLER
+                "role": UserRole.MANAGER,
+                "permissions": {
+                    "view": True,
+                    "create": False,
+                    "edit": True,
+                    "delete": False,
+                    "annul": True,
+                    "mark_delete": True,
+                    "activate": True,
+                    "edit_organization": False
+                }
             },
             {
                 "username": "operator",
                 "password": "operator",
                 "full_name": "Оператор Системы",
-                "role": UserRole.OPERATOR
+                "role": UserRole.VIEWER,
+                "permissions": {
+                    "view": True,
+                    "create": False,
+                    "edit": False,
+                    "delete": False,
+                    "annul": False,
+                    "mark_delete": False,
+                    "activate": False,
+                    "edit_organization": False
+                }
             },
             {
                 "username": "guard",
                 "password": "guard",
                 "full_name": "Охранник",
-                "role": UserRole.GUARD
+                "role": UserRole.GUARD,
+                "permissions": {
+                    "view": True,
+                    "create": False,
+                    "edit": False,
+                    "delete": False,
+                    "annul": False,
+                    "mark_delete": False,
+                    "activate": False,
+                    "edit_organization": False
+                }
             }
         ]
         
@@ -184,7 +224,8 @@ def seed_database():
                         username=user_data["username"],
                         password=user_data["password"],
                         full_name=user_data["full_name"],
-                        role=user_data["role"]
+                        role=user_data["role"],
+                        permissions=user_data.get("permissions")
                     )
                     print(f"   ✅ {user.username} ({user.role}) - пароль: {user_data['password']}")
                 except Exception as e:

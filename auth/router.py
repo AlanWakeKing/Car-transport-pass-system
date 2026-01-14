@@ -1,15 +1,17 @@
-"""
+﻿"""
 API endpoints для авторизации и управления пользователями
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
+import json
 
 from database import get_db
 from models import User, UserRole
 from auth.schemas import UserCreate, UserResponse, UserUpdate, Token, LoginRequest
 from auth.service import AuthService
+from auth.permissions import normalize_permissions, defaults_for_role
 from auth.dependencies import get_current_active_user, require_admin
 
 
@@ -88,7 +90,8 @@ def create_user(
         username=user_data.username,
         password=user_data.password,
         full_name=user_data.full_name,
-        role=user_data.role
+        role=user_data.role,
+        permissions=user_data.permissions
     )
     return user
 
@@ -152,7 +155,14 @@ def update_user(
     
     if user_data.password is not None:
         user.password_hash = AuthService.get_password_hash(user_data.password)
-    
+
+    if user_data.permissions is not None:
+        permissions_payload = normalize_permissions(user_data.permissions)
+        if permissions_payload is None:
+            role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
+            permissions_payload = defaults_for_role(role_value)
+        user.extra_permissions = json.dumps(permissions_payload)
+
     db.commit()
     db.refresh(user)
     return user

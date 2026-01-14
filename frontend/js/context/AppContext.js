@@ -5,7 +5,10 @@ export class AppContext {
   constructor() {
     this.state = {
       token: localStorage.getItem("auth_token"),
-      user: null
+      user: null,
+      ui: {
+        propuskFilters: { status: "" }
+      }
     };
     if (this.state.token) {
       setAuthToken(this.state.token);
@@ -40,6 +43,11 @@ export class AppContext {
   setUser(user) {
     this.state.user = user;
     this.emit("user-change", user);
+  }
+
+  setPropuskFilters(filters) {
+    this.state.ui.propuskFilters = { ...this.state.ui.propuskFilters, ...filters };
+    this.emit("ui-change", this.state.ui);
   }
 
   logout() {

@@ -1,8 +1,8 @@
-"""
+﻿"""
 Pydantic схемы для авторизации и пользователей
 """
 from pydantic import BaseModel, Field, validator
-from typing import Optional
+from typing import Optional, Dict
 from datetime import datetime
 from models import UserRole
 
@@ -11,12 +11,13 @@ from models import UserRole
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     full_name: str = Field(..., min_length=3, max_length=200)
-    role: UserRole
+    role: UserRole = UserRole.VIEWER
 
 
 # Создание пользователя
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6, max_length=100)
+    permissions: Optional[Dict[str, bool]] = None
 
 
 # Обновление пользователя
@@ -25,6 +26,7 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     password: Optional[str] = Field(None, min_length=6, max_length=100)
+    permissions: Optional[Dict[str, bool]] = None
 
 
 # Ответ с данными пользователя
@@ -32,6 +34,7 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     created_at: datetime
+    permissions: Optional[Dict[str, bool]] = None
     
     class Config:
         from_attributes = True

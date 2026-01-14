@@ -1,4 +1,4 @@
-"""
+﻿"""
 Dependencies для проверки авторизации и прав доступа
 """
 from fastapi import Depends, HTTPException, status
@@ -9,6 +9,7 @@ from typing import List
 from database import get_db
 from models import User, UserRole
 from auth.service import AuthService
+from auth.permissions import PERMISSION_KEYS, normalize_permissions, defaults_for_role
 
 
 # OAuth2 схема для токенов
@@ -87,21 +88,42 @@ require_admin = RoleChecker([UserRole.ADMIN])
 
 require_manager = RoleChecker([
     UserRole.ADMIN,
-    UserRole.MANAGER_CREATOR,
-    UserRole.MANAGER_CONTROLLER
-])
-
-require_manager_controller = RoleChecker([
-    UserRole.ADMIN,
-    UserRole.MANAGER_CONTROLLER
-])
-
-require_operator = RoleChecker([
-    UserRole.ADMIN,
-    UserRole.MANAGER_CREATOR,
-    UserRole.MANAGER_CONTROLLER,
-    UserRole.OPERATOR
+    UserRole.MANAGER
 ])
 
 # Все роли (любой авторизованный пользователь)
 require_auth = get_current_active_user
+
+# ===== Permissions =====
+def get_user_permissions(user: User) -> dict:
+    role_value = user.role.value if hasattr(user.role, 'value') else str(user.role)
+    data = user.permissions if hasattr(user, 'permissions') else {}
+    if data:
+        normalized = normalize_permissions(data)
+        if normalized is not None:
+            role_defaults = defaults_for_role(role_value)
+            role_defaults.update(normalized)
+            return role_defaults
+    return defaults_for_role(role_value)
+
+def require_permissions(required):
+    def checker(user: User = Depends(get_current_active_user)) -> User:
+        permissions = get_user_permissions(user)
+        missing = [p for p in required if not permissions.get(p, False)]
+        if missing:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="???????????? ???? ??? ?????????? ????????"
+            )
+        return user
+    return checker
+
+require_view = require_permissions(["view"])
+require_create = require_permissions(["create"])
+require_edit = require_permissions(["edit"])
+require_delete = require_permissions(["delete"])
+require_annul = require_permissions(["annul"])
+require_mark_delete = require_permissions(["mark_delete"])
+require_activate = require_permissions(["activate"])
+require_edit_organization = require_permissions(["edit_organization"])
+require_download_pdf = require_permissions(["download_pdf"])

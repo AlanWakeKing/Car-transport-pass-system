@@ -1,9 +1,10 @@
-import { canManageUsers } from "../../utils/permissions.js";
+﻿import { canManageUsers, canShowMenuPropusks, canShowMenuReferences, canShowMenuPrint, canShowMenuReports, canShowMenuUsers, canShowMenuSettings } from "../../utils/permissions.js";
 
 export class AppShell {
-  constructor(root, { onNavigate, onLogout }) {
+  constructor(root, { onNavigate, onNavigateWithFilters, onLogout }) {
     this.root = root;
     this.onNavigate = onNavigate;
+    this.onNavigateWithFilters = onNavigateWithFilters;
     this.onLogout = onLogout;
     this.current = "propusks";
   }
@@ -20,11 +21,13 @@ export class AppShell {
             </div>
           </div>
           <div class="menu" id="app-menu">
-            ${this.menuItem("propusks", "directions_car", "Пропуска")}
-            ${this.menuItem("references", "storage", "Справочники")}
-            ${this.menuItem("print", "print", "В печать")}
-            ${this.menuItem("reports", "analytics", "Отчёты")}
-            ${canManageUsers(user) ? this.menuItem("users", "shield_person", "Пользователи") : ""}
+            ${canShowMenuPropusks(user) ? this.menuItem("propusks", "directions_car", "Пропуска") : ""}
+            ${this.menuItem("dashboard", "space_dashboard", "Главная")}
+            ${canShowMenuReferences(user) ? this.menuItem("references", "storage", "Справочники") : ""}
+            ${canShowMenuPrint(user) ? this.menuItem("print", "print", "В печать") : ""}
+            ${canShowMenuReports(user) ? this.menuItem("reports", "analytics", "Отчёты") : ""}
+            ${canManageUsers(user) && canShowMenuUsers(user) ? this.menuItem("users", "shield_person", "Пользователи") : ""}
+            ${user?.role === "admin" && canShowMenuSettings(user) ? this.menuItem("settings", "tune", "Настройки") : ""}
           </div>
           <div class="md-divider"></div>
           <div class="section">

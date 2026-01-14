@@ -1,4 +1,4 @@
-import { ENDPOINTS } from "./config/constants.js";
+﻿import { ENDPOINTS } from "./config/constants.js";
 import { apiPost, handleError, setAuthToken } from "./api/client.js";
 import { AppContext } from "./context/AppContext.js";
 import { AppShell } from "./components/layout/AppShell.js";
@@ -10,6 +10,7 @@ import { ReferencesPage } from "./components/pages/References.js";
 import { UsersPage } from "./components/pages/Users.js";
 import { ReportsPage } from "./components/pages/Reports.js";
 import { PrintPage } from "./components/pages/Print.js";
+import { SettingsPage } from "./components/pages/Settings.js";
 
 const appRoot = document.getElementById("app");
 const context = new AppContext();
@@ -20,7 +21,8 @@ const pages = {
   references: new ReferencesPage(context),
   print: new PrintPage(context),
   reports: new ReportsPage(context),
-  users: new UsersPage(context)
+  users: new UsersPage(context),
+  settings: new SettingsPage(context)
 };
 
 let shell = null;
@@ -55,14 +57,23 @@ async function renderPage(name) {
   shell.mountContent(content);
 }
 
+function navigateWithFilters(page, filters) {
+  if (filters) {
+    context.setPropuskFilters(filters);
+  }
+  renderPage(page);
+}
+
 async function showApp() {
   shell = new AppShell(appRoot, {
     onNavigate: (page) => renderPage(page),
+    onNavigateWithFilters: (page, filters) => navigateWithFilters(page, filters),
     onLogout: () => {
       context.logout();
       showLogin();
     }
   });
+  context.on("navigate", ({ page, filters }) => navigateWithFilters(page, filters));
   shell.user = context.state.user;
   shell.render(context.state.user);
   await renderPage("dashboard");

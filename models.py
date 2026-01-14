@@ -1,4 +1,4 @@
-"""
+﻿"""
 Модели базы данных для системы управления пропусками
 """
 from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Text, Enum as SQLEnum
@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 import enum
+import json
 
 from database import Base
 
@@ -13,10 +14,9 @@ from database import Base
 # Enum для ролей пользователей
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
-    MANAGER_CREATOR = "manager_creator"  # Менеджер 1 - Оформитель
-    MANAGER_CONTROLLER = "manager_controller"  # Менеджер 2 - Контролёр
-    OPERATOR = "operator"
-    GUARD = "guard"  # Охранник
+    MANAGER = "manager"
+    GUARD = "guard"  # Guard
+    VIEWER = "viewer"  # View only
 
 
 # Enum для статусов пропуска
@@ -44,7 +44,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(SQLEnum(UserRole), nullable=False)
+    role = Column(SQLEnum(UserRole, values_callable=lambda enum_cls: [e.value for e in enum_cls], name="userrole"), nullable=False)
     full_name = Column(String(200), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -55,6 +55,16 @@ class User(Base):
     
     # Связи
     created_propusks = relationship("Propusk", back_populates="creator", foreign_keys="Propusk.created_by")
+
+    @property
+    def permissions(self):
+        """Returns user permissions from JSON."""
+        try:
+            data = json.loads(self.extra_permissions or "{}")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
 
 
 # 2. Таблица организаций
@@ -199,3 +209,44 @@ class NotificationLog(Base):
     sent_at = Column(DateTime(timezone=True), server_default=func.now())
     status = Column(String(20), nullable=False)  # sent, failed
     error_message = Column(Text)
+
+# 10. ??????? PDF-?????????
+class PropuskTemplate(Base):
+    __tablename__ = "propusk_template"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version = Column(Integer, nullable=False)
+    data = Column(Text, nullable=False)  # JSON
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    creator = relationship("User")
+
+    @property
+    def data_json(self):
+        try:
+            return json.loads(self.data or "{}")
+        except Exception:
+            return {}
+
+
+# 11. Report PDF templates
+class ReportTemplate(Base):
+    __tablename__ = "report_template"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version = Column(Integer, nullable=False)
+    data = Column(Text, nullable=False)  # JSON
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    creator = relationship("User")
+
+    @property
+    def data_json(self):
+        try:
+            return json.loads(self.data or "{}")
+        except Exception:
+            return {}

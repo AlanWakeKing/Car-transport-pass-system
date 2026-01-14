@@ -1,10 +1,10 @@
-"""
+﻿"""
 Скрипт для создания всех таблиц и проверки подключения к БД
 """
 from database import Base, engine, check_connection
 from models import (
     User, Organiz, Abonent, MarkAuto, ModelAuto, 
-    Propusk, PropuskArchive, PropuskHistory, NotificationLog
+    Propusk, PropuskArchive, PropuskHistory, NotificationLog, PropuskTemplate, ReportTemplate
 )
 
 
@@ -53,6 +53,9 @@ def show_tables_info():
         ("propusk", "Пропуска (активные)"),
         ("propusk_archive", "Архив отозванных пропусков"),
         ("propusk_history", "История изменений пропусков"),
+                ("propusk_template",
+        ("report_template", "??????? PDF ???????"),
+         "??????? PDF-?????????"),
         ("notifications_log", "Лог уведомлений"),
     ]
     

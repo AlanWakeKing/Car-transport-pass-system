@@ -1,8 +1,36 @@
-import { ENDPOINTS } from "../../config/constants.js";
+﻿import { ENDPOINTS } from "../../config/constants.js";
 import { apiGet, apiPost, apiPatch, apiDelete, handleError } from "../../api/client.js";
 import { toast } from "../common/Toast.js";
 import { canManageUsers } from "../../utils/permissions.js";
 import { modal } from "../common/Modal.js";
+
+const PERMISSIONS = [
+  { key: "view", label: "Просмотр" },
+  { key: "create", label: "Создание" },
+  { key: "edit", label: "Редактирование пропуска" },
+  { key: "activate", label: "Активация" },
+  { key: "delete", label: "Удаление" },
+  { key: "annul", label: "Аннулирование" },
+  { key: "mark_delete", label: "На удаление" },
+  { key: "edit_organization", label: "Редактирование организации" },
+  { key: "download_pdf", label: "Скачивание PDF" }
+];
+
+const MENU_PERMISSIONS = [
+  { key: "menu_propusks", label: "Пропуска" },
+  { key: "menu_references", label: "Справочники" },
+  { key: "menu_print", label: "В печать" },
+  { key: "menu_reports", label: "Отчёты" },
+  { key: "menu_users", label: "Пользователи" },
+  { key: "menu_settings", label: "Настройки" }
+];
+
+function normalizePermissions(data) {
+  const perms = {};
+  PERMISSIONS.forEach((p) => { perms[p.key] = Boolean(data?.[p.key]); });
+  MENU_PERMISSIONS.forEach((p) => { perms[p.key] = Boolean(data?.[p.key]); });
+  return perms;
+}
 
 export class UsersPage {
   constructor(context) {
@@ -86,6 +114,10 @@ export class UsersPage {
 
   openUserModal(user) {
     const isEdit = Boolean(user);
+    const permissions = normalizePermissions(user?.permissions);
+    if (user?.role === "admin") {
+      PERMISSIONS.forEach((p) => { permissions[p.key] = true; });
+    }
     const form = document.createElement("form");
     form.className = "section";
     form.innerHTML = `
@@ -105,7 +137,7 @@ export class UsersPage {
         <div class="md-field">
           <label>Роль</label>
           <select class="md-select" name="role" required>
-            ${["admin","manager_creator","manager_controller","operator","guard"].map(r => `<option value="${r}" ${user?.role===r?"selected":""}>${r}</option>`).join("")}
+            ${["viewer","admin","manager","guard"].map(r => `<option value="${r}" ${user?.role===r?"selected":""}>${r}</option>`).join("")}
           </select>
         </div>
         <div class="md-field">
@@ -115,6 +147,23 @@ export class UsersPage {
             <option value="false" ${user?.is_active === false ? "selected":""}>Нет</option>
           </select>
         </div>
+      </div>
+      <div class="permissions-grid">
+        ${PERMISSIONS.map((p) => `
+          <label class="perm-chip">
+            <input type="checkbox" name="perm_${p.key}" ${permissions[p.key] ? "checked" : ""}>
+            <span>${p.label}</span>
+          </label>
+        `).join("")}
+      </div>
+      <div class="md-divider"></div>
+      <div class="permissions-grid">
+        ${MENU_PERMISSIONS.map((p) => `
+          <label class="perm-chip">
+            <input type="checkbox" name="perm_${p.key}" ${permissions[p.key] ? "checked" : ""}>
+            <span>${p.label}</span>
+          </label>
+        `).join("")}
       </div>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-user">Отмена</button>
@@ -127,18 +176,33 @@ export class UsersPage {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
+      const permissions = {};
+      [...PERMISSIONS, ...MENU_PERMISSIONS].forEach((p) => {
+        permissions[p.key] = Boolean(data[`perm_${p.key}`]);
+      });
+      if (data.role === "admin") {
+        [...PERMISSIONS, ...MENU_PERMISSIONS].forEach((p) => { permissions[p.key] = true; });
+      }
       try {
         if (isEdit) {
           const payload = {
             full_name: data.full_name,
             role: data.role,
-            is_active: data.is_active === "true"
+            is_active: data.is_active === "true",
+            permissions
           };
           if (data.password) payload.password = data.password;
           await apiPatch(`${ENDPOINTS.users}/${user.id}`, payload);
           toast.show("Пользователь обновлён", "success");
         } else {
-          await apiPost(ENDPOINTS.users, data);
+          const payload = {
+            username: data.username,
+            password: data.password,
+            full_name: data.full_name,
+            role: data.role,
+            permissions
+          };
+          await apiPost(ENDPOINTS.users, payload);
           toast.show("Пользователь создан", "success");
         }
         instance.close();

@@ -1,6 +1,6 @@
 import { ENDPOINTS } from "../../config/constants.js";
 import { apiGet, handleError } from "../../api/client.js";
-import { renderStatusChip, statusMap } from "../../utils/statusConfig.js";
+import { renderStatusChip } from "../../utils/statusConfig.js";
 
 export class DashboardPage {
   constructor(context) {
@@ -28,8 +28,8 @@ export class DashboardPage {
       <div class="md-card">
         <div class="md-toolbar">
           <div>
-            <p class="tag">Последние операции</p>
-            <h3 style="margin:0;">Недавние пропуска</h3>
+            <p class="tag">??????????</p>
+            <h3 style="margin:0;">????????? ????????</h3>
           </div>
         </div>
         <div class="md-divider"></div>
@@ -37,11 +37,11 @@ export class DashboardPage {
           <table class="md-table" id="recent-table">
             <thead>
               <tr>
-                <th>Госномер</th>
-                <th>Компания</th>
-                <th>Водитель</th>
-                <th>Статус</th>
-                <th>До</th>
+                <th>????????</th>
+                <th>????????</th>
+                <th>????????</th>
+                <th>??????</th>
+                <th>??</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -57,21 +57,28 @@ export class DashboardPage {
   }
 
   renderStats(node, { active, draft, revoked }) {
+    node.addEventListener("click", (e) => {
+      const card = e.target.closest("[data-status]");
+      if (!card) return;
+      const status = card.dataset.status;
+      this.context.setPropuskFilters({ status });
+      this.context.emit("navigate", { page: "propusks", filters: { status } });
+    });
     node.innerHTML = `
-      ${this.statCard("Активные", active, "task_alt", "success")}
-      ${this.statCard("Черновики", draft, "pending", "info")}
-      ${this.statCard("Аннулированы", revoked, "block", "error")}
+      ${this.statCard("????????", active, "task_alt", "success", "active")}
+      ${this.statCard("?????????", draft, "pending", "info", "draft")}
+      ${this.statCard("??????????????", revoked, "block", "error", "revoked")}
     `;
   }
 
-  statCard(label, value, icon, tone) {
+  statCard(label, value, icon, tone, status) {
     return `
-      <div class="md-card stat-card animate-fade">
+      <div class="md-card stat-card animate-fade" data-status="${status}">
         <div class="tag">${label}</div>
         <div class="stat-value">${value}</div>
         <div class="stat-meta">
           <span class="material-icons-round" style="color:var(--md-${tone});">${icon}</span>
-          <span>Мониторинг в реальном времени</span>
+          <span>?????????? ?????? ? ???????? ???????</span>
         </div>
       </div>
     `;
@@ -79,7 +86,7 @@ export class DashboardPage {
 
   renderTable(tbody, propusks) {
     if (!propusks.length) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">Нет данных</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">??? ??????</div></td></tr>`;
       return;
     }
 
@@ -88,8 +95,8 @@ export class DashboardPage {
         (p) => `
           <tr>
             <td><strong>${p.gos_id}</strong><br><span class="tag">ID ${p.id_propusk}</span></td>
-            <td>${p.org_name || "—"}</td>
-            <td>${p.abonent_fio || "—"}</td>
+            <td>${p.org_name || "-"}</td>
+            <td>${p.abonent_fio || "-"}</td>
             <td>${renderStatusChip(p.status)}</td>
             <td>${p.valid_until}</td>
           </tr>

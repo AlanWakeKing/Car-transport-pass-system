@@ -1,4 +1,4 @@
-"""
+﻿"""
 Главный файл приложения FastAPI
 """
 from fastapi import FastAPI
@@ -12,6 +12,7 @@ from config import settings
 from database import check_connection
 from auth.router import router as auth_router
 from references.router import router as references_router
+from settings.router import router as settings_router
 
 
 # Lifespan для инициализации при старте
@@ -59,6 +60,7 @@ app.add_middleware(
 # Подключение роутеров API
 app.include_router(auth_router)
 app.include_router(references_router)
+app.include_router(settings_router)
 
 # Импортируем роутер пропусков
 from propusk.router import router as propusk_router

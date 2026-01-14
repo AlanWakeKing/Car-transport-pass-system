@@ -1,7 +1,8 @@
-"""
+﻿"""
 Сервис авторизации и работы с пользователями
 """
 from datetime import datetime, timedelta
+import json
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -10,6 +11,7 @@ from fastapi import HTTPException, status
 
 from models import User, UserRole
 from config import settings
+from auth.permissions import normalize_permissions, defaults_for_role
 
 
 # Контекст для хеширования паролей
@@ -74,7 +76,7 @@ class AuthService:
         return user
     
     @staticmethod
-    def create_user(db: Session, username: str, password: str, full_name: str, role: UserRole) -> User:
+    def create_user(db: Session, username: str, password: str, full_name: str, role: UserRole, permissions=None) -> User:
         """Создание нового пользователя"""
         # Проверяем, не существует ли уже пользователь
         existing_user = db.query(User).filter(User.username == username).first()
@@ -84,6 +86,12 @@ class AuthService:
                 detail="Пользователь с таким логином уже существует"
             )
         
+        # Нормализуем права пользователя
+        permissions_payload = normalize_permissions(permissions)
+        if permissions_payload is None:
+            role_value = role.value if hasattr(role, "value") else str(role)
+            permissions_payload = defaults_for_role(role_value)
+
         # Создаём пользователя
         hashed_password = AuthService.get_password_hash(password)
         user = User(
@@ -91,7 +99,8 @@ class AuthService:
             password_hash=hashed_password,
             full_name=full_name,
             role=role,
-            is_active=True
+            is_active=True,
+            extra_permissions=json.dumps(permissions_payload)
         )
         
         db.add(user)

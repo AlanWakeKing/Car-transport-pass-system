@@ -1,17 +1,19 @@
-"""
+﻿"""
 Конфигурация подключения к базе данных PostgreSQL
 """
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
+from config import settings
+
 # Параметры подключения к PostgreSQL
 # Измени эти параметры под свою БД
-DATABASE_URL = "postgresql://postgres:GfhjkmFlvbybcnhfnjhf@10.10.10.7:5432/propusk_system"
+DATABASE_URL = settings.DATABASE_URL
 
 # Создание движка БД
 engine = create_engine(
     DATABASE_URL,
-    echo=True,  # Показывать SQL запросы в консоли (для отладки)
+    echo=settings.DEBUG,  # Показывать SQL запросы в консоли (для отладки)
     pool_pre_ping=True  # Проверка соединения перед использованием
 )
 

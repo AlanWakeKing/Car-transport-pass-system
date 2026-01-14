@@ -1,4 +1,4 @@
-"""
+﻿"""
 Сервис для работы с пропусками
 """
 from sqlalchemy.orm import Session
@@ -105,7 +105,7 @@ class PropuskService:
     def activate_propusk(db: Session, propusk_id: int, user_id: int, comment: Optional[str] = None) -> Propusk:
         """
         Активация пропуска (Черновик → Активный)
-        Доступно только для manager_controller
+        Доступно по праву активации
         """
         propusk = PropuskService.get_propusk_by_id(db, propusk_id)
         
@@ -141,7 +141,7 @@ class PropuskService:
     def mark_for_deletion(db: Session, propusk_id: int, user_id: int, comment: Optional[str] = None) -> Propusk:
         """
         Пометка на удаление (Активный → На удалении)
-        Доступно для operator
+        Доступно по праву пометки на удаление
         """
         propusk = PropuskService.get_propusk_by_id(db, propusk_id)
         
@@ -177,7 +177,7 @@ class PropuskService:
     def revoke_propusk(db: Session, propusk_id: int, user_id: int, comment: Optional[str] = None) -> Propusk:
         """
         Отзыв пропуска (Активный → Отозван)
-        Доступно для manager_controller
+        Доступно по праву аннулирования
         """
         propusk = PropuskService.get_propusk_by_id(db, propusk_id)
         
@@ -260,87 +260,55 @@ class PropuskService:
             "archive_id": archive.id,
             "original_id": archive.id_propusk
         }
-    
     @staticmethod
-    def archive_propusk(db: Session, propusk_id: int, user_id: int) -> dict:
+    def restore_propusk(db: Session, propusk_id: int, user_id: int, comment: Optional[str] = None) -> Propusk:
         """
-        Архивирование отозванного пропуска
-        Перемещает из propusk в propusk_archive
-        Доступно только для admin
+        Восстановление аннулированного пропуска
+        Если пропуск в propusk, переводим REVOKED -> ACTIVE.
+        Если пропуск в архиве, возвращаем его в propusk со статусом REVOKED.
         """
-        propusk = PropuskService.get_propusk_by_id(db, propusk_id)
-        
-        if not propusk:
+        propusk = db.query(Propusk).filter(Propusk.id_propusk == propusk_id).first()
+        if propusk:
+            if propusk.status != PropuskStatus.REVOKED:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Можно восстановить только аннулированный пропуск"
+                )
+            old_status = propusk.status.value
+            propusk.status = PropuskStatus.DRAFT
+            PropuskService._add_history(
+                db=db,
+                propusk_id=propusk.id_propusk,
+                action=HistoryAction.EDITED,
+                user_id=user_id,
+                old_values=json.dumps({"status": old_status}),
+                new_values=json.dumps({"status": PropuskStatus.DRAFT.value}),
+                comment=comment or "Пропуск восстановлен"
+            )
+            db.commit()
+            db.refresh(propusk)
+            return propusk
+
+        archive = db.query(PropuskArchive).filter(
+            PropuskArchive.id_propusk == propusk_id
+        ).first()
+
+        if not archive:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Пропуск не найден"
             )
-        
-        if propusk.status != PropuskStatus.REVOKED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Можно архивировать только отозванные пропуска"
-            )
-        
-        # Создаём запись в архиве
-        archive = PropuskArchive(
-            id_propusk=propusk.id_propusk,
-            gos_id=propusk.gos_id,
-            id_mark_auto=propusk.id_mark_auto,
-            id_model_auto=propusk.id_model_auto,
-            id_org=propusk.id_org,
-            release_date=propusk.release_date,
-            valid_until=propusk.valid_until,
-            id_fio=propusk.id_fio,
-            status=propusk.status.value,
-            info=propusk.info,
-            created_by=propusk.created_by,
-            created_at=propusk.created_at,
-            archived_by=user_id
-        )
-        
-        db.add(archive)
-        db.delete(propusk)
-        db.commit()
-        
-        return {
-            "message": "Пропуск успешно архивирован",
-            "archive_id": archive.id,
-            "original_id": archive.id_propusk
-        }
 
-
-# ===== ДОБАВИТЬ НОВЫЙ МЕТОД НИЖЕ =====
-    @staticmethod
-    def restore_propusk(db: Session, propusk_id: int, user_id: int, comment: Optional[str] = None) -> Propusk:
-        """
-        Восстановление архивированного пропуска из архива
-        Перемещает из propusk_archive обратно в propusk со статусом REVOKED
-        Доступно только для admin
-        """
-        # Проверяем, существует ли пропуск в архиве
-        archive = db.query(PropuskArchive).filter(
-            PropuskArchive.id_propusk == propusk_id
-        ).first()
-        
-        if not archive:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Пропуск не найден в архиве"
-            )
-        
-        # Проверяем, что пропуска нет в основной таблице
         existing_propusk = db.query(Propusk).filter(
             Propusk.id_propusk == propusk_id
         ).first()
-        
+
         if existing_propusk:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Пропуск уже присутствует в основной таблице"
             )
-        
-        # Восстанавливаем пропуск из архива
+
         propusk = Propusk(
             id_propusk=archive.id_propusk,
             gos_id=archive.gos_id,
@@ -350,26 +318,25 @@ class PropuskService:
             release_date=archive.release_date,
             valid_until=archive.valid_until,
             id_fio=archive.id_fio,
-            status=PropuskStatus.REVOKED,
+            status=PropuskStatus.DRAFT,
             info=archive.info,
             created_by=archive.created_by,
             created_at=archive.created_at
         )
-        
+
         db.add(propusk)
         db.delete(archive)
-        
-        # Записываем в историю восстановление
+
         PropuskService._add_history(
             db=db,
             propusk_id=propusk.id_propusk,
-            action=HistoryAction.ARCHIVED,
+            action=HistoryAction.EDITED,
             user_id=user_id,
             old_values=json.dumps({"status": "archived"}),
-            new_values=json.dumps({"status": PropuskStatus.REVOKED.value}),
+            new_values=json.dumps({"status": PropuskStatus.DRAFT.value}),
             comment=comment or "Пропуск восстановлен из архива"
         )
-        
+
         db.commit()
         db.refresh(propusk)
         return propusk
@@ -382,7 +349,7 @@ class PropuskService:
     @staticmethod
     def get_propusks(
         db: Session,
-        status: Optional[PropuskStatus] = None,
+        status: Optional[object] = None,
         id_org: Optional[int] = None,
         gos_id: Optional[str] = None,
         id_fio: Optional[int] = None,
@@ -400,7 +367,10 @@ class PropuskService:
         
         # Фильтры
         if status:
-            query = query.filter(Propusk.status == status)
+            if isinstance(status, (list, tuple, set)):
+                query = query.filter(Propusk.status.in_(list(status)))
+            else:
+                query = query.filter(Propusk.status == status)
         
         if id_org:
             query = query.filter(Propusk.id_org == id_org)

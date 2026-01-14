@@ -4,6 +4,7 @@
 from database import SessionLocal
 from models import User, UserRole
 from auth.service import AuthService
+from auth.permissions import PERMISSION_KEYS
 
 
 def create_admin():
@@ -68,7 +69,8 @@ def create_admin():
             username=username,
             password=password,
             full_name=full_name,
-            role=UserRole.ADMIN
+            role=UserRole.ADMIN,
+            permissions={key: True for key in PERMISSION_KEYS}
         )
         
         print("\n✅ Администратор успешно создан!")

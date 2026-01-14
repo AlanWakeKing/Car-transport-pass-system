@@ -1,7 +1,7 @@
-import { ENDPOINTS } from "../../config/constants.js";
+﻿import { ENDPOINTS } from "../../config/constants.js";
 import { apiGet, apiPost, apiPatch, apiDelete, handleError } from "../../api/client.js";
 import { toast } from "../common/Toast.js";
-import { canManagePropusks } from "../../utils/permissions.js";
+import { canEditOrganizations, canManageUsers } from "../../utils/permissions.js";
 import { modal } from "../common/Modal.js";
 
 export class ReferencesPage {
@@ -47,7 +47,7 @@ export class ReferencesPage {
           <div class="tab-panel active" data-tab="orgs">
             <div class="md-toolbar">
               <h4 style="margin:0;">Организации</h4>
-              ${canManagePropusks(this.context.state.user) ? `<button class="md-btn" data-add="org"><span class="material-icons-round">add</span>Добавить</button>` : ""}
+              ${canEditOrganizations(this.context.state.user) ? `<button class="md-btn" data-add="org"><span class="material-icons-round">add</span>Добавить</button>` : ""}
             </div>
             <div class="table-scroll">
               <table class="md-table">
@@ -66,7 +66,7 @@ export class ReferencesPage {
           <div class="tab-panel" data-tab="marks">
             <div class="md-toolbar">
               <h4 style="margin:0;">Марки</h4>
-              ${canManagePropusks(this.context.state.user) ? `<button class="md-btn" data-add="mark"><span class="material-icons-round">add</span>Добавить</button>` : ""}
+              ${canManageUsers(this.context.state.user) ? `<button class="md-btn" data-add="mark"><span class="material-icons-round">add</span>Добавить</button>` : ""}
             </div>
             <div class="table-scroll">
               <table class="md-table">
@@ -84,7 +84,7 @@ export class ReferencesPage {
           <div class="tab-panel" data-tab="models">
             <div class="md-toolbar">
               <h4 style="margin:0;">Модели</h4>
-              ${canManagePropusks(this.context.state.user) ? `<button class="md-btn" data-add="model"><span class="material-icons-round">add</span>Добавить</button>` : ""}
+              ${canManageUsers(this.context.state.user) ? `<button class="md-btn" data-add="model"><span class="material-icons-round">add</span>Добавить</button>` : ""}
             </div>
             <div class="table-scroll">
               <table class="md-table">
@@ -115,11 +115,8 @@ export class ReferencesPage {
       node.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.dataset.tab === tab));
     });
 
-    if (canManagePropusks(this.context.state.user)) {
+    if (canEditOrganizations(this.context.state.user)) {
       node.querySelector("[data-add='org']")?.addEventListener("click", () => this.openOrgModal());
-      node.querySelector("[data-add='mark']")?.addEventListener("click", () => this.openMarkModal());
-      node.querySelector("[data-add='model']")?.addEventListener("click", () => this.openModelModal());
-
       node.querySelector("#org-tbody")?.addEventListener("click", (e) => {
         const btn = e.target.closest("[data-action]");
         if (!btn) return;
@@ -128,6 +125,11 @@ export class ReferencesPage {
         if (btn.dataset.action === "edit") this.openOrgModal(org);
         if (btn.dataset.action === "delete") this.confirmOrgDelete(org);
       });
+    }
+
+    if (canManageUsers(this.context.state.user)) {
+      node.querySelector("[data-add='mark']")?.addEventListener("click", () => this.openMarkModal());
+      node.querySelector("[data-add='model']")?.addEventListener("click", () => this.openModelModal());
 
       node.querySelector("#mark-tbody")?.addEventListener("click", (e) => {
         const btn = e.target.closest("[data-action]");
@@ -183,11 +185,11 @@ export class ReferencesPage {
         <td>${org.free_mesto ?? 0}</td>
         <td>${org.id_org}</td>
         <td>
-          ${canManagePropusks(this.context.state.user) ? `
+          ${canEditOrganizations(this.context.state.user) ? `
           <div class="inline-actions">
             <button class="md-btn ghost" data-action="edit" data-id="${org.id_org}">Редактировать</button>
             <button class="md-btn ghost" data-action="delete" data-id="${org.id_org}">Удалить</button>
-          </div>` : "—"}
+          </div>` : "-"}
         </td>
       </tr>
     `;
@@ -199,11 +201,11 @@ export class ReferencesPage {
         <td>${mark.mark_name}</td>
         <td>${mark.id_mark}</td>
         <td>
-          ${canManagePropusks(this.context.state.user) ? `
+          ${canManageUsers(this.context.state.user) ? `
           <div class="inline-actions">
             <button class="md-btn ghost" data-action="edit" data-id="${mark.id_mark}">Редактировать</button>
             <button class="md-btn ghost" data-action="delete" data-id="${mark.id_mark}">Удалить</button>
-          </div>` : "—"}
+          </div>` : "-"}
         </td>
       </tr>
     `;
@@ -216,11 +218,11 @@ export class ReferencesPage {
         <td>${model.mark_name || model.id_mark}</td>
         <td>${model.id_model}</td>
         <td>
-          ${canManagePropusks(this.context.state.user) ? `
+          ${canManageUsers(this.context.state.user) ? `
           <div class="inline-actions">
             <button class="md-btn ghost" data-action="edit" data-id="${model.id_model}">Редактировать</button>
             <button class="md-btn ghost" data-action="delete" data-id="${model.id_model}">Удалить</button>
-          </div>` : "—"}
+          </div>` : "-"}
         </td>
       </tr>
     `;

@@ -13,7 +13,7 @@ from references.schemas import (
     ModelAutoCreate, ModelAutoUpdate, ModelAutoResponse,
     AbonentCreate, AbonentUpdate, AbonentResponse
 )
-from auth.dependencies import require_auth, require_admin
+from auth.dependencies import require_auth, require_admin, require_edit_organization
 
 
 router = APIRouter(prefix="/api/references", tags=["Справочники"])
@@ -40,7 +40,7 @@ def get_organizations(
 def create_organization(
     org_data: OrganizCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_edit_organization)
 ):
     """Создание новой организации (только админ)"""
     # Проверяем уникальность названия
@@ -79,7 +79,7 @@ def update_organization(
     org_id: int,
     org_data: OrganizUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_edit_organization)
 ):
     """Обновление организации (только админ)"""
     org = db.query(Organiz).filter(Organiz.id_org == org_id).first()
@@ -102,7 +102,7 @@ def update_organization(
 def delete_organization(
     org_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_edit_organization)
 ):
     """Удаление организации (только админ)"""
     org = db.query(Organiz).filter(Organiz.id_org == org_id).first()
