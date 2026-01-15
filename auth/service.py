@@ -76,7 +76,15 @@ class AuthService:
         return user
     
     @staticmethod
-    def create_user(db: Session, username: str, password: str, full_name: str, role: UserRole, permissions=None) -> User:
+    def create_user(
+        db: Session,
+        username: str,
+        password: str,
+        full_name: str,
+        role: UserRole,
+        permissions=None,
+        tg_user_id: Optional[int] = None
+    ) -> User:
         """Создание нового пользователя"""
         # Проверяем, не существует ли уже пользователь
         existing_user = db.query(User).filter(User.username == username).first()
@@ -100,7 +108,8 @@ class AuthService:
             full_name=full_name,
             role=role,
             is_active=True,
-            extra_permissions=json.dumps(permissions_payload)
+            extra_permissions=json.dumps(permissions_payload),
+            tg_user_id=tg_user_id
         )
         
         db.add(user)

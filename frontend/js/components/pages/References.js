@@ -42,6 +42,7 @@ export class ReferencesPage {
           <button class="tab active" data-tab="orgs">Организации</button>
           <button class="tab" data-tab="marks">Марки</button>
           <button class="tab" data-tab="models">Модели</button>
+          <button class="tab" data-tab="drivers">Водители</button>
         </div>
         <div class="tab-panels">
           <div class="tab-panel active" data-tab="orgs">
@@ -100,6 +101,25 @@ export class ReferencesPage {
               </table>
             </div>
           </div>
+          <div class="tab-panel" data-tab="drivers">
+            <div class="md-toolbar">
+              <h4 style="margin:0;">Водители</h4>
+              ${canEditOrganizations(this.context.state.user) ? `<button class="md-btn" data-add="driver"><span class="material-icons-round">add</span>Добавить</button>` : ""}
+            </div>
+            <div class="table-scroll">
+              <table class="md-table">
+                <thead>
+                  <tr>
+                    <th>ФИО</th>
+                    <th>Организация</th>
+                    <th>ID</th>
+                    <th>Действия</th>
+                  </tr>
+                </thead>
+                <tbody id="driver-tbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -150,6 +170,18 @@ export class ReferencesPage {
       });
     }
 
+    if (canEditOrganizations(this.context.state.user)) {
+      node.querySelector("[data-add='driver']")?.addEventListener("click", () => this.openDriverModal());
+      node.querySelector("#driver-tbody")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-action]");
+        if (!btn) return;
+        const driver = this.state.abonents.find((a) => String(a.id_fio) === String(btn.dataset.id));
+        if (!driver) return;
+        if (btn.dataset.action === "edit") this.openDriverModal(driver);
+        if (btn.dataset.action === "delete") this.confirmDriverDelete(driver);
+      });
+    }
+
     return node;
   }
 
@@ -158,6 +190,7 @@ export class ReferencesPage {
     const orgTbody = this.host.querySelector("#org-tbody");
     const markTbody = this.host.querySelector("#mark-tbody");
     const modelTbody = this.host.querySelector("#model-tbody");
+    const driverTbody = this.host.querySelector("#driver-tbody");
 
     if (orgTbody) {
       orgTbody.innerHTML = this.state.orgs.length
@@ -175,6 +208,12 @@ export class ReferencesPage {
       modelTbody.innerHTML = this.state.models.length
         ? this.state.models.map((m) => this.modelRow(m)).join("")
         : `<tr><td colspan="4"><div class="empty">Нет моделей</div></td></tr>`;
+    }
+
+    if (driverTbody) {
+      driverTbody.innerHTML = this.state.abonents.length
+        ? this.state.abonents.map((a) => this.driverRow(a)).join("")
+        : `<tr><td colspan="4"><div class="empty">Нет водителей</div></td></tr>`;
     }
   }
 
@@ -222,6 +261,24 @@ export class ReferencesPage {
           <div class="inline-actions">
             <button class="md-btn ghost" data-action="edit" data-id="${model.id_model}">Редактировать</button>
             <button class="md-btn ghost" data-action="delete" data-id="${model.id_model}">Удалить</button>
+          </div>` : "-"}
+        </td>
+      </tr>
+    `;
+  }
+
+  driverRow(driver) {
+    const fullName = `${driver.surname} ${driver.name}${driver.otchestvo ? " " + driver.otchestvo : ""}`;
+    return `
+      <tr>
+        <td>${fullName}</td>
+        <td>${driver.org_name || driver.id_org || "-"}</td>
+        <td>${driver.id_fio}</td>
+        <td>
+          ${canEditOrganizations(this.context.state.user) ? `
+          <div class="inline-actions">
+            <button class="md-btn ghost" data-action="edit" data-id="${driver.id_fio}">Редактировать</button>
+            <button class="md-btn ghost" data-action="delete" data-id="${driver.id_fio}">Удалить</button>
           </div>` : "-"}
         </td>
       </tr>
@@ -390,6 +447,90 @@ export class ReferencesPage {
           await apiPost(ENDPOINTS.references.models, { id_mark: data.id_mark, model_name: data.model_name });
           toast.show("Модель добавлена", "success");
         }
+        instance.close();
+        await this.load();
+        this.renderTables();
+      } catch (err) {
+        handleError(err);
+      }
+    });
+  }
+
+  openDriverModal(driver) {
+    const isEdit = Boolean(driver);
+    const form = document.createElement("form");
+    form.className = "section";
+    form.innerHTML = `
+      <div class="form-grid">
+        <div class="md-field">
+          <label>Фамилия</label>
+          <input class="md-input" name="surname" value="${driver?.surname || ""}" required>
+        </div>
+        <div class="md-field">
+          <label>Имя</label>
+          <input class="md-input" name="name" value="${driver?.name || ""}" required>
+        </div>
+        <div class="md-field">
+          <label>Отчество</label>
+          <input class="md-input" name="otchestvo" value="${driver?.otchestvo || ""}">
+        </div>
+        <div class="md-field">
+          <label>Организация</label>
+          <select class="md-select" name="id_org" required>
+            <option value="">Выберите организацию</option>
+            ${this.state.orgs.map((o) => `<option value="${o.id_org}" ${String(driver?.id_org) === String(o.id_org) ? "selected":""}>${o.org_name}</option>`).join("")}
+          </select>
+        </div>
+        <div class="md-field" style="grid-column:1/-1;">
+          <label>Комментарий</label>
+          <input class="md-input" name="info" value="${driver?.info || ""}">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="md-btn ghost" id="cancel-driver">Отмена</button>
+        <button class="md-btn" type="submit">${isEdit ? "Сохранить" : "Добавить"}</button>
+      </div>
+    `;
+    const instance = modal.show({ title: isEdit ? "Редактировать водителя" : "Новый водитель", content: form });
+    form.querySelector("#cancel-driver")?.addEventListener("click", () => instance.close());
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      data.id_org = Number(data.id_org);
+      try {
+        if (isEdit) {
+          await apiPatch(`${ENDPOINTS.references.abonents}/${driver.id_fio}`, data);
+          toast.show("Водитель обновлён", "success");
+        } else {
+          await apiPost(ENDPOINTS.references.abonents, data);
+          toast.show("Водитель добавлен", "success");
+        }
+        instance.close();
+        await this.load();
+        this.renderTables();
+      } catch (err) {
+        handleError(err);
+      }
+    });
+  }
+
+  confirmDriverDelete(driver) {
+    const fullName = `${driver.surname} ${driver.name}${driver.otchestvo ? " " + driver.otchestvo : ""}`;
+    const content = document.createElement("div");
+    content.className = "section";
+    content.innerHTML = `
+      <p>Удалить водителя <strong>${fullName}</strong>?</p>
+      <div class="modal-footer">
+        <button type="button" class="md-btn ghost" id="cancel-del">Отмена</button>
+        <button type="button" class="md-btn" id="confirm-del">Удалить</button>
+      </div>
+    `;
+    const instance = modal.show({ title: "Удалить водителя", content });
+    content.querySelector("#cancel-del")?.addEventListener("click", () => instance.close());
+    content.querySelector("#confirm-del")?.addEventListener("click", async () => {
+      try {
+        await apiDelete(`${ENDPOINTS.references.abonents}/${driver.id_fio}`);
+        toast.show("Водитель удалён", "success");
         instance.close();
         await this.load();
         this.renderTables();

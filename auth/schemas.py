@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     full_name: str = Field(..., min_length=3, max_length=200)
     role: UserRole = UserRole.VIEWER
+    tg_user_id: Optional[int] = None
 
 
 # Создание пользователя
@@ -26,6 +27,7 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     password: Optional[str] = Field(None, min_length=6, max_length=100)
+    tg_user_id: Optional[int] = None
     permissions: Optional[Dict[str, bool]] = None
 
 
@@ -44,6 +46,10 @@ class UserResponse(UserBase):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class TelegramLoginRequest(BaseModel):
+    tg_user_id: int
 
 
 # Ответ с токеном

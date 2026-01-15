@@ -127,3 +127,13 @@ require_mark_delete = require_permissions(["mark_delete"])
 require_activate = require_permissions(["activate"])
 require_edit_organization = require_permissions(["edit_organization"])
 require_download_pdf = require_permissions(["download_pdf"])
+
+
+def require_reports_access(user: User = Depends(get_current_active_user)) -> User:
+    permissions = get_user_permissions(user)
+    if not (permissions.get("menu_reports", False) or permissions.get("download_pdf", False)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав для просмотра отчетов"
+        )
+    return user

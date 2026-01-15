@@ -56,6 +56,10 @@ export function canShowMenuPropusks(user) {
   return hasMenuPermission(user, "menu_propusks") && hasPermission(user, "view");
 }
 
+export function canShowMenuHome(user) {
+  return hasMenuPermission(user, "menu_home");
+}
+
 export function canShowMenuReferences(user) {
   return hasMenuPermission(user, "menu_references");
 }

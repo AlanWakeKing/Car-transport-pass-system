@@ -4,6 +4,7 @@ import { AppContext } from "./context/AppContext.js";
 import { AppShell } from "./components/layout/AppShell.js";
 import { renderLoginForm } from "./components/auth/LoginForm.js";
 import { toast } from "./components/common/Toast.js";
+import { canManageUsers, canShowMenuHome, canShowMenuPropusks, canShowMenuReferences, canShowMenuPrint, canShowMenuReports, canShowMenuUsers, canShowMenuSettings } from "./utils/permissions.js";
 import { DashboardPage } from "./components/pages/Dashboard.js";
 import { PropusksPage } from "./components/pages/Propusks.js";
 import { ReferencesPage } from "./components/pages/References.js";
@@ -26,6 +27,20 @@ const pages = {
 };
 
 let shell = null;
+
+function getFirstAccessiblePage(user) {
+  const candidates = [
+    { key: "dashboard", ok: canShowMenuHome(user) },
+    { key: "propusks", ok: canShowMenuPropusks(user) },
+    { key: "references", ok: canShowMenuReferences(user) },
+    { key: "print", ok: canShowMenuPrint(user) },
+    { key: "reports", ok: canShowMenuReports(user) },
+    { key: "users", ok: canManageUsers(user) && canShowMenuUsers(user) },
+    { key: "settings", ok: user?.role === "admin" && canShowMenuSettings(user) },
+  ];
+  const first = candidates.find((c) => c.ok);
+  return first ? first.key : "dashboard";
+}
 
 async function showLogin() {
   appRoot.innerHTML = "";
@@ -76,7 +91,7 @@ async function showApp() {
   context.on("navigate", ({ page, filters }) => navigateWithFilters(page, filters));
   shell.user = context.state.user;
   shell.render(context.state.user);
-  await renderPage("dashboard");
+  await renderPage(getFirstAccessiblePage(context.state.user));
 }
 
 async function bootstrap() {

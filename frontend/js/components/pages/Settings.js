@@ -16,8 +16,9 @@ const PROPUSK_FIELDS = [
 
 const REPORT_FIELDS = [
   { key: "org_name", label: "Организация" },
-  { key: "free_mesto", label: "Свободные места" },
-  { key: "report_date", label: "Дата отчета" }
+  { key: "free_mesto", label: "Гостевые места" },
+  { key: "report_date", label: "Дата отчета" },
+  { key: "permanent_count", label: "Постоянные места" }
 ];
 
 const DEFAULT_PROPUSK_TEMPLATE = {
@@ -31,13 +32,203 @@ const DEFAULT_REPORT_TEMPLATE = {
   page: { width_mm: 297, height_mm: 210 },
   grid_mm: 5,
   meta: {},
-  elements: []
+  elements: [
+    {
+      id: "r_header_bg",
+      type: "rect",
+      x: 5,
+      y: 5,
+      width: 287,
+      height: 10,
+      stroke: "#2f2f2f",
+      stroke_width: 1,
+      fill: "#e1e6ec"
+    },
+    {
+      id: "r_header_text",
+      type: "text",
+      x: 7,
+      y: 7,
+      width: 90,
+      height: 6,
+      text: "Сведения о парковке",
+      font_size: 10,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_owner_label",
+      type: "text",
+      x: 5,
+      y: 18,
+      width: 35,
+      height: 6,
+      text: "Владелец",
+      font_size: 8,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_owner_value",
+      type: "field",
+      x: 40,
+      y: 18,
+      width: 252,
+      height: 6,
+      field: "org_name",
+      font_size: 8,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_free_label",
+      type: "text",
+      x: 5,
+      y: 25,
+      width: 35,
+      height: 6,
+      text: "Гостевые места",
+      font_size: 8,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_free_value",
+      type: "field",
+      x: 40,
+      y: 25,
+      width: 20,
+      height: 6,
+      field: "free_mesto",
+      font_size: 8,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_perm_label",
+      type: "text",
+      x: 5,
+      y: 32,
+      width: 35,
+      height: 6,
+      text: "Постоянные места",
+      font_size: 8,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_perm_value",
+      type: "field",
+      x: 40,
+      y: 32,
+      width: 20,
+      height: 6,
+      field: "permanent_count",
+      font_size: 8,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_table_header_bg",
+      type: "rect",
+      x: 5,
+      y: 40,
+      width: 287,
+      height: 8,
+      stroke: "#2f2f2f",
+      stroke_width: 1,
+      fill: "#ededed"
+    },
+    {
+      id: "r_table_body",
+      type: "rect",
+      x: 5,
+      y: 48,
+      width: 287,
+      height: 120,
+      stroke: "#2f2f2f",
+      stroke_width: 1,
+      fill: ""
+    },
+    {
+      id: "r_th_num",
+      type: "text",
+      x: 7,
+      y: 41,
+      width: 20,
+      height: 6,
+      text: "№ Разрешения",
+      font_size: 7,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_th_mark",
+      type: "text",
+      x: 30,
+      y: 41,
+      width: 25,
+      height: 6,
+      text: "Марка А/М",
+      font_size: 7,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_th_gos",
+      type: "text",
+      x: 60,
+      y: 41,
+      width: 30,
+      height: 6,
+      text: "ГосНомер А/М",
+      font_size: 7,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_th_fio",
+      type: "text",
+      x: 95,
+      y: 41,
+      width: 60,
+      height: 6,
+      text: "ФИО",
+      font_size: 7,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_th_info",
+      type: "text",
+      x: 165,
+      y: 41,
+      width: 70,
+      height: 6,
+      text: "Информация",
+      font_size: 7,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "r_th_sign",
+      type: "text",
+      x: 245,
+      y: 41,
+      width: 40,
+      height: 6,
+      text: "Подпись",
+      font_size: 7,
+      align: "left",
+      color: "#111827"
+    }
+  ]
 };
 
 export class SettingsPage {
   constructor(context) {
     this.context = context;
-    this.scale = 4;
+    this.scale = { propusk: 4, report: 2 };
     this.state = {
       tab: "report",
       templates: {
@@ -63,11 +254,7 @@ export class SettingsPage {
       ]);
 
       if (active?.data) {
-        const merged = { ...baseTemplate, ...active.data };
-        if (isPropusk) {
-          merged.meta = { ...DEFAULT_PROPUSK_TEMPLATE.meta, ...(active.data.meta || {}) };
-        }
-        this.state.templates[tab] = merged;
+        this.state.templates[tab] = this.normalizeTemplate(active.data, baseTemplate, isPropusk);
       }
       this.state.versions[tab] = versions || [];
       this.state.loaded[tab] = true;
@@ -78,6 +265,37 @@ export class SettingsPage {
 
   getCurrentTemplate() {
     return this.state.templates[this.state.tab];
+  }
+
+  normalizeTemplate(data, baseTemplate, isPropusk) {
+    const merged = { ...baseTemplate, ...data };
+    if (isPropusk) {
+      merged.meta = { ...DEFAULT_PROPUSK_TEMPLATE.meta, ...(data.meta || {}) };
+    }
+    const elements = Array.isArray(merged.elements)
+      ? merged.elements.filter((el) => this.isValidElement(el))
+      : [];
+    const minElements = isPropusk ? 1 : 5;
+    const usable = elements.length >= minElements ? elements : [];
+    merged.elements = usable.length ? usable : baseTemplate.elements;
+    if (!isPropusk) {
+      const page = merged.page || {};
+      if (!page.width_mm || !page.height_mm || page.width_mm < 200 || page.height_mm < 150) {
+        merged.page = baseTemplate.page;
+      }
+    }
+    return merged;
+  }
+
+  isValidElement(el) {
+    if (!el || typeof el !== "object") return false;
+    if (!el.type || !el.id) return false;
+    const numeric = ["x", "y", "width", "height"];
+    return numeric.every((key) => typeof el[key] === "number" && Number.isFinite(el[key]));
+  }
+
+  getScale() {
+    return this.state.tab === "propusk" ? this.scale.propusk : this.scale.report;
   }
 
   setCurrentTemplate(data) {
@@ -183,22 +401,23 @@ export class SettingsPage {
   renderCanvas(host) {
     if (!host) return;
     const template = this.getCurrentTemplate();
+    const scale = this.getScale();
     const { width_mm, height_mm } = template.page;
-    host.style.width = `${width_mm * this.scale}px`;
-    host.style.height = `${height_mm * this.scale}px`;
-    host.style.setProperty("--grid-size", `${template.grid_mm * this.scale}px`);
+    host.style.width = `${width_mm * scale}px`;
+    host.style.height = `${height_mm * scale}px`;
+    host.style.setProperty("--grid-size", `${template.grid_mm * scale}px`);
     host.innerHTML = "";
 
     template.elements.forEach((el) => {
       const item = document.createElement("div");
       item.className = `template-element ${el.type}`;
       item.dataset.id = el.id;
-      item.style.left = `${el.x * this.scale}px`;
-      item.style.top = `${el.y * this.scale}px`;
-      item.style.width = `${el.width * this.scale}px`;
-      item.style.height = `${el.height * this.scale}px`;
+      item.style.left = `${el.x * scale}px`;
+      item.style.top = `${el.y * scale}px`;
+      item.style.width = `${el.width * scale}px`;
+      item.style.height = `${el.height * scale}px`;
       if (el.type === "line") {
-        item.style.height = `${Math.max(el.height * this.scale, 2)}px`;
+        item.style.height = `${Math.max(el.height * scale, 2)}px`;
         item.style.background = el.stroke || "#111827";
       }
       if (el.type === "rect") {
@@ -334,13 +553,14 @@ export class SettingsPage {
       const el = template.elements.find((item) => item.id === id);
       if (!el) return;
       this.setCurrentSelected(id);
+      const scale = this.getScale();
       const startX = e.clientX;
       const startY = e.clientY;
       const startLeft = el.x;
       const startTop = el.y;
       const move = (evt) => {
-        const dx = (evt.clientX - startX) / this.scale;
-        const dy = (evt.clientY - startY) / this.scale;
+        const dx = (evt.clientX - startX) / scale;
+        const dy = (evt.clientY - startY) / scale;
         const grid = template.grid_mm || 1;
         el.x = Math.max(0, Math.round((startLeft + dx) / grid) * grid);
         el.y = Math.max(0, Math.round((startTop + dy) / grid) * grid);
@@ -440,10 +660,7 @@ export class SettingsPage {
       const template = this.state.versions[this.state.tab].find((v) => v.id === id);
       if (template?.data) {
         const base = this.state.tab === "propusk" ? DEFAULT_PROPUSK_TEMPLATE : DEFAULT_REPORT_TEMPLATE;
-        const merged = { ...base, ...template.data };
-        if (this.state.tab === "propusk") {
-          merged.meta = { ...DEFAULT_PROPUSK_TEMPLATE.meta, ...(template.data.meta || {}) };
-        }
+        const merged = this.normalizeTemplate(template.data, base, this.state.tab === "propusk");
         this.setCurrentTemplate(merged);
         this.setCurrentSelected(null);
         this.renderCanvas(canvas);

@@ -202,6 +202,26 @@ export class PropusksPage {
     select.innerHTML = `<option value="">Выберите модель</option>` + models.map((m) => `<option value="${m.id_model}">${m.model_name}</option>`).join("");
   }
 
+  fillDrivers(select, orgId, selectedId = "") {
+    if (!select) return;
+    if (!orgId) {
+      select.innerHTML = `<option value="">Сначала выберите организацию</option>`;
+      select.disabled = true;
+      return;
+    }
+    const drivers = (this.state.references?.abonents || []).filter(
+      (a) => String(a.id_org) === String(orgId)
+    );
+    select.disabled = false;
+    select.innerHTML = `<option value="">Выберите водителя</option>` + drivers
+      .map((a) => {
+        const name = `${a.surname} ${a.name}${a.otchestvo ? " " + a.otchestvo : ""}`;
+        const selected = String(selectedId) === String(a.id_fio) ? "selected" : "";
+        return `<option value="${a.id_fio}" ${selected}>${name}</option>`;
+      })
+      .join("");
+  }
+
   openCreateModal() {
     const form = document.createElement("form");
     form.className = "section";
@@ -257,10 +277,16 @@ export class PropusksPage {
 
     const instance = modal.show({ title: "Новый пропуск", content: form });
     const modelSelect = form.querySelector('[name="id_model_auto"]');
+    const orgSelect = form.querySelector('[name="id_org"]');
+    const driverSelect = form.querySelector('[name="id_fio"]');
+    this.fillDrivers(driverSelect, orgSelect?.value);
     form.addEventListener("change", async (e) => {
       if (e.target.name === "id_mark_auto") {
         await this.fetchModels(e.target.value);
         this.fillModels(modelSelect);
+      }
+      if (e.target.name === "id_org") {
+        this.fillDrivers(driverSelect, e.target.value);
       }
     });
 
@@ -339,17 +365,23 @@ export class PropusksPage {
 
     const instance = modal.show({ title: `Редактировать пропуск #${propusk.id_propusk}`, content: form });
     const modelSelect = form.querySelector('[name="id_model_auto"]');
+    const orgSelect = form.querySelector('[name="id_org"]');
+    const driverSelect = form.querySelector('[name="id_fio"]');
 
     if (propusk.id_mark_auto) {
       await this.fetchModels(propusk.id_mark_auto);
       this.fillModels(modelSelect);
       if (modelSelect) modelSelect.value = String(propusk.id_model_auto || "");
     }
+    this.fillDrivers(driverSelect, orgSelect?.value, propusk.id_fio);
 
     form.addEventListener("change", async (e) => {
       if (e.target.name === "id_mark_auto") {
         await this.fetchModels(e.target.value);
         this.fillModels(modelSelect);
+      }
+      if (e.target.name === "id_org") {
+        this.fillDrivers(driverSelect, e.target.value);
       }
     });
 

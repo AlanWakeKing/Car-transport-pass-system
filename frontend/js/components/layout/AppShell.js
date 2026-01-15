@@ -1,4 +1,4 @@
-﻿import { canManageUsers, canShowMenuPropusks, canShowMenuReferences, canShowMenuPrint, canShowMenuReports, canShowMenuUsers, canShowMenuSettings } from "../../utils/permissions.js";
+﻿import { canManageUsers, canShowMenuHome, canShowMenuPropusks, canShowMenuReferences, canShowMenuPrint, canShowMenuReports, canShowMenuUsers, canShowMenuSettings } from "../../utils/permissions.js";
 
 export class AppShell {
   constructor(root, { onNavigate, onNavigateWithFilters, onLogout }) {
@@ -21,8 +21,8 @@ export class AppShell {
             </div>
           </div>
           <div class="menu" id="app-menu">
+            ${canShowMenuHome(user) ? this.menuItem("dashboard", "space_dashboard", "Главная") : ""}
             ${canShowMenuPropusks(user) ? this.menuItem("propusks", "directions_car", "Пропуска") : ""}
-            ${this.menuItem("dashboard", "space_dashboard", "Главная")}
             ${canShowMenuReferences(user) ? this.menuItem("references", "storage", "Справочники") : ""}
             ${canShowMenuPrint(user) ? this.menuItem("print", "print", "В печать") : ""}
             ${canShowMenuReports(user) ? this.menuItem("reports", "analytics", "Отчёты") : ""}
@@ -32,7 +32,6 @@ export class AppShell {
           <div class="md-divider"></div>
           <div class="section">
             <div style="font-weight:700;">${user?.full_name || ""}</div>
-            <div class="tag">${user?.role || ""}</div>
             <button class="md-btn ghost" id="logout-btn">
               <span class="material-icons-round">logout</span>Выход
             </button>

@@ -9,7 +9,7 @@ import json
 
 from database import get_db
 from models import User, UserRole
-from auth.schemas import UserCreate, UserResponse, UserUpdate, Token, LoginRequest
+from auth.schemas import UserCreate, UserResponse, UserUpdate, Token, LoginRequest, TelegramLoginRequest
 from auth.service import AuthService
 from auth.permissions import normalize_permissions, defaults_for_role
 from auth.dependencies import get_current_active_user, require_admin
@@ -66,6 +66,29 @@ def login_json(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+@router.post("/login-telegram", response_model=Token)
+def login_telegram(
+    payload: TelegramLoginRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Вход в систему через Telegram (по tg_user_id)
+    """
+    user = db.query(User).filter(User.tg_user_id == payload.tg_user_id).first()
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Пользователь не найден или неактивен"
+        )
+
+    access_token = AuthService.create_access_token(
+        data={"sub": str(user.id), "username": user.username, "role": user.role.value}
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(
     current_user: User = Depends(get_current_active_user)
@@ -91,7 +114,8 @@ def create_user(
         password=user_data.password,
         full_name=user_data.full_name,
         role=user_data.role,
-        permissions=user_data.permissions
+        permissions=user_data.permissions,
+        tg_user_id=user_data.tg_user_id
     )
     return user
 
@@ -155,6 +179,9 @@ def update_user(
     
     if user_data.password is not None:
         user.password_hash = AuthService.get_password_hash(user_data.password)
+
+    if user_data.tg_user_id is not None:
+        user.tg_user_id = user_data.tg_user_id
 
     if user_data.permissions is not None:
         permissions_payload = normalize_permissions(user_data.permissions)

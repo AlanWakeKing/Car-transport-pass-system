@@ -70,15 +70,32 @@ app.include_router(propusk_router)
 # Монтирование статических файлов фронтенда
 frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
 
+
+class UTF8StaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            lower_path = path.lower()
+            if lower_path.endswith((".js", ".css", ".html")):
+                content_type = response.headers.get("content-type", "")
+                if "charset=" in content_type:
+                    base_type = content_type.split(";", 1)[0]
+                    response.headers["content-type"] = f"{base_type}; charset=utf-8"
+                elif content_type:
+                    response.headers["content-type"] = f"{content_type}; charset=utf-8"
+                else:
+                    response.headers["content-type"] = "text/plain; charset=utf-8"
+        return response
+
 # Монтируем CSS
 css_dir = os.path.join(frontend_dir, "css")
 if os.path.exists(css_dir):
-    app.mount("/css", StaticFiles(directory=css_dir), name="css")
+    app.mount("/css", UTF8StaticFiles(directory=css_dir), name="css")
 
 # Монтируем JS
 js_dir = os.path.join(frontend_dir, "js")
 if os.path.exists(js_dir):
-    app.mount("/js", StaticFiles(directory=js_dir), name="js")
+    app.mount("/js", UTF8StaticFiles(directory=js_dir), name="js")
 
 
 # Корневой endpoint - отдаём главную страницу фронтенда
@@ -90,7 +107,7 @@ def root():
     frontend_path = os.path.join(frontend_dir, "index.html")
     
     if os.path.exists(frontend_path):
-        return FileResponse(frontend_path)
+        return FileResponse(frontend_path, media_type="text/html; charset=utf-8")
     else:
         return {
             "app": settings.APP_NAME,

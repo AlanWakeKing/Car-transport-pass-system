@@ -2,7 +2,6 @@
 Конфигурация приложения
 """
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -23,10 +22,6 @@ class Settings(BaseSettings):
     APP_NAME: str = "Система управления пропусками"
     APP_VERSION: str = "0.0.1"
     DEBUG: bool = True
-    
-    # Telegram (опционально, настроим позже)
-    TELEGRAM_BOT_TOKEN: Optional[str] = None
-    TELEGRAM_CHAT_ID: Optional[str] = None
     
     class Config:
         env_file = ".env"

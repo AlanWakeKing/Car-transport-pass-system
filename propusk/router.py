@@ -8,7 +8,7 @@ from typing import List, Optional
 from datetime import date
 
 from database import get_db
-from models import User, PropuskStatus
+from models import User, PropuskStatus, Organiz
 from propusk.schemas import (
     PropuskCreate, PropuskUpdate, PropuskResponse, 
     PropuskStatusChange, PropuskHistoryResponse
@@ -18,11 +18,11 @@ from urllib.parse import quote
 
 from propusk.service import PropuskService
 from propusk.pdf_generator import PropuskPDFGenerator
-from propusk.org_report import generate_org_report
-from settings.service import get_active_template
+from propusk.org_report import generate_org_report, generate_all_orgs_report
+from settings.service import get_active_template, get_active_report_template
 from auth.dependencies import (
     require_view, require_create, require_edit, require_delete, require_annul, require_mark_delete, require_activate,
-    require_download_pdf, get_user_permissions
+    require_download_pdf, require_reports_access, get_user_permissions
 )
 
 def _get_allowed_statuses(user: User):
@@ -397,30 +397,80 @@ def download_multiple_propusks_pdf(
     )
 
 
+@router.get("/reports/org/all/pdf")
+def download_all_orgs_report_pdf(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_reports_access)
+):
+    """
+    Отчёт по пропускам всех организаций (табличный вид).
+    """
+    orgs = db.query(Organiz).order_by(Organiz.org_name).all()
+    items = []
+    for org in orgs:
+        propusks = PropuskService.get_propusks(
+            db=db,
+            id_org=org.id_org,
+            status=PropuskStatus.ACTIVE,
+            limit=1000
+        )
+        for p in propusks:
+            _enrich_propusk(db, p)
+        if not propusks:
+            continue
+        items.append(
+            {
+                "org_name": org.org_name,
+                "free_mesto": org.free_mesto or 0,
+                "permanent_count": len(propusks),
+                "propusks": propusks
+            }
+        )
+
+    report_template = get_active_report_template(db)
+    template_data = report_template.data_json if report_template else None
+    pdf_buffer = generate_all_orgs_report(items, template_data=template_data)
+    filename = "orgs_report.pdf"
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
 @router.get("/reports/org/{org_id}/pdf")
 def download_org_report_pdf(
     org_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_download_pdf)
+    current_user: User = Depends(require_reports_access)
 ):
     """
     Отчёт по пропускам организации (табличный вид).
     """
+    org = db.query(Organiz).filter(Organiz.id_org == org_id).first()
+    if not org:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Организация не найдена")
+
     propusks = PropuskService.get_propusks(
         db=db,
         id_org=org_id,
-        limit=500
+        status=PropuskStatus.ACTIVE,
+        limit=1000
     )
-    if not propusks:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пропуска не найдены")
 
-    # enrich
     for p in propusks:
         _enrich_propusk(db, p)
 
-    org_name = propusks[0].org_name if hasattr(propusks[0], "org_name") else ""
-    pdf_buffer = generate_org_report(org_name, propusks)
-    filename = f"org_{org_id}_propusks.pdf"
+    report_template = get_active_report_template(db)
+    template_data = report_template.data_json if report_template else None
+    pdf_buffer = generate_org_report(
+        org_name=org.org_name,
+        free_mesto=org.free_mesto or 0,
+        permanent_count=len(propusks),
+        propusks=propusks,
+        template_data=template_data
+    )
+    filename = f"org_{org_id}_report.pdf"
     return StreamingResponse(
         pdf_buffer,
         media_type="application/pdf",

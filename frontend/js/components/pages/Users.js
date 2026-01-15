@@ -17,6 +17,7 @@ const PERMISSIONS = [
 ];
 
 const MENU_PERMISSIONS = [
+  { key: "menu_home", label: "Главная" },
   { key: "menu_propusks", label: "Пропуска" },
   { key: "menu_references", label: "Справочники" },
   { key: "menu_print", label: "В печать" },

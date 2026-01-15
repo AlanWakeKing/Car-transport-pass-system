@@ -1,7 +1,7 @@
 ﻿"""
 Модели базы данных для системы управления пропусками
 """
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Text, Enum as SQLEnum
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Date, DateTime, ForeignKey, Text, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -46,6 +46,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(SQLEnum(UserRole, values_callable=lambda enum_cls: [e.value for e in enum_cls], name="userrole"), nullable=False)
     full_name = Column(String(200), nullable=False)
+    tg_user_id = Column(BigInteger, unique=True, index=True, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
