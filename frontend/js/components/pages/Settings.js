@@ -237,7 +237,18 @@ export class SettingsPage {
       },
       versions: { propusk: [], report: [] },
       selected: { propusk: null, report: null },
-      loaded: { propusk: false, report: false }
+      loaded: { propusk: false, report: false },
+      db: {
+        loaded: false,
+        values: {
+          POSTGRES_DB: "",
+          POSTGRES_USER: "",
+          POSTGRES_PASSWORD: "",
+          POSTGRES_HOST: "",
+          POSTGRES_PORT: "",
+          DATABASE_URL: ""
+        }
+      }
     };
   }
 
@@ -258,6 +269,23 @@ export class SettingsPage {
       }
       this.state.versions[tab] = versions || [];
       this.state.loaded[tab] = true;
+    } catch (err) {
+      handleError(err);
+    }
+  }
+
+  async loadDbSettings() {
+    try {
+      const data = await apiGet(ENDPOINTS.settings.dbEnv);
+      this.state.db.values = {
+        POSTGRES_DB: data?.POSTGRES_DB ?? "",
+        POSTGRES_USER: data?.POSTGRES_USER ?? "",
+        POSTGRES_PASSWORD: data?.POSTGRES_PASSWORD ?? "",
+        POSTGRES_HOST: data?.POSTGRES_HOST ?? "",
+        POSTGRES_PORT: data?.POSTGRES_PORT ?? "",
+        DATABASE_URL: data?.DATABASE_URL ?? ""
+      };
+      this.state.db.loaded = true;
     } catch (err) {
       handleError(err);
     }
@@ -328,27 +356,36 @@ export class SettingsPage {
   }
 
   async render() {
-    if (!this.state.loaded[this.state.tab]) {
+    const isDb = this.state.tab === "db";
+    if (isDb) {
+      if (!this.state.db.loaded) {
+        await this.loadDbSettings();
+      }
+    } else if (!this.state.loaded[this.state.tab]) {
       await this.loadTab(this.state.tab);
     }
     const node = document.createElement("div");
     node.className = "section";
+    const dbSection = isDb ? this.renderDbSection() : "";
     node.innerHTML = `
       <div class="md-card section">
         <div class="md-toolbar">
           <div>
             <p class="tag">Настройки</p>
-            <h3 style="margin:0;">Редактор шаблонов</h3>
+            <h3 style="margin:0;">${isDb ? "Подключение к базе данных" : "Редактор шаблонов"}</h3>
           </div>
+          ${isDb ? "" : `
           <div class="inline-actions">
             <button class="md-btn ghost" id="reset-template">Сбросить</button>
             <button class="md-btn" id="save-template">Сохранить</button>
-          </div>
+          </div>`}
         </div>
         <div class="tabs" id="settings-tabs">
           <button class="tab ${this.state.tab === "report" ? "active" : ""}" data-tab="report">Отчет по организациям</button>
           <button class="tab ${this.state.tab === "propusk" ? "active" : ""}" data-tab="propusk">Пропуска</button>
+          <button class="tab ${this.state.tab === "db" ? "active" : ""}" data-tab="db">Подключение БД</button>
         </div>
+        ${isDb ? dbSection : `
         <div class="template-layout">
           <div class="md-card template-editor">
             <div class="template-toolbar">
@@ -388,12 +425,14 @@ export class SettingsPage {
               <button class="md-btn ghost" id="load-version" style="margin-top:0.5rem;">Загрузить</button>
             </div>
           </div>
-        </div>
+        </div>`}
       </div>
     `;
 
-    this.renderCanvas(node.querySelector("#template-canvas"));
-    this.renderPanel(node.querySelector("#element-panel"));
+    if (!isDb) {
+      this.renderCanvas(node.querySelector("#template-canvas"));
+      this.renderPanel(node.querySelector("#element-panel"));
+    }
     this.bind(node);
     return node;
   }
@@ -520,22 +559,66 @@ export class SettingsPage {
     `;
   }
 
-  bind(node) {
-    const canvas = node.querySelector("#template-canvas");
-    const panel = node.querySelector("#element-panel");
+  renderDbSection() {
+    const values = this.state.db.values;
+    return `
+      <div class="section">
+        <div style="color:var(--md-text-muted); margin-bottom:1rem;">
+          После сохранения перезапустите приложение или контейнер.
+        </div>
+        <div class="form-grid">
+          <div class="md-field">
+            <label>POSTGRES_DB</label>
+            <input class="md-input" id="db-postgres-db" value="${values.POSTGRES_DB || ""}">
+          </div>
+          <div class="md-field">
+            <label>POSTGRES_USER</label>
+            <input class="md-input" id="db-postgres-user" value="${values.POSTGRES_USER || ""}">
+          </div>
+          <div class="md-field">
+            <label>POSTGRES_PASSWORD</label>
+            <input class="md-input" id="db-postgres-password" type="password" value="${values.POSTGRES_PASSWORD || ""}">
+          </div>
+          <div class="md-field">
+            <label>POSTGRES_HOST</label>
+            <input class="md-input" id="db-postgres-host" value="${values.POSTGRES_HOST || ""}">
+          </div>
+          <div class="md-field">
+            <label>POSTGRES_PORT</label>
+            <input class="md-input" id="db-postgres-port" type="number" value="${values.POSTGRES_PORT || ""}">
+          </div>
+        </div>
+        <div class="md-divider"></div>
+        <div class="md-field">
+          <label>DATABASE_URL (опционально)</label>
+          <input class="md-input" id="db-database-url" value="${values.DATABASE_URL || ""}">
+        </div>
+        <div class="inline-actions" style="margin-top:1rem;">
+          <button class="md-btn" id="save-db-env">Сохранить</button>
+          <button class="md-btn ghost" id="reload-db-env">Обновить</button>
+        </div>
+      </div>
+    `;
+  }
 
+  bind(node) {
     node.querySelector("#settings-tabs")?.addEventListener("click", async (e) => {
       const btn = e.target.closest(".tab");
       if (!btn) return;
       const tab = btn.dataset.tab;
       if (tab === this.state.tab) return;
       this.state.tab = tab;
-      if (!this.state.loaded[tab]) {
-        await this.loadTab(tab);
-      }
       const replacement = await this.render();
       node.replaceWith(replacement);
     });
+
+    if (this.state.tab === "db") {
+      this.bindDb(node);
+      return;
+    }
+
+    const canvas = node.querySelector("#template-canvas");
+    const panel = node.querySelector("#element-panel");
 
     canvas.addEventListener("click", (e) => {
       const target = e.target.closest(".template-element");
@@ -676,6 +759,32 @@ export class SettingsPage {
     node.querySelector("#year-value")?.addEventListener("input", (e) => {
       if (this.state.tab !== "propusk") return;
       this.getCurrentTemplate().meta.year_value = e.target.value;
+    });
+  }
+
+  bindDb(node) {
+    node.querySelector("#save-db-env")?.addEventListener("click", async () => {
+      const payload = {
+        POSTGRES_DB: node.querySelector("#db-postgres-db")?.value || "",
+        POSTGRES_USER: node.querySelector("#db-postgres-user")?.value || "",
+        POSTGRES_PASSWORD: node.querySelector("#db-postgres-password")?.value || "",
+        POSTGRES_HOST: node.querySelector("#db-postgres-host")?.value || "",
+        POSTGRES_PORT: node.querySelector("#db-postgres-port")?.value || "",
+        DATABASE_URL: node.querySelector("#db-database-url")?.value || ""
+      };
+      try {
+        await apiPost(ENDPOINTS.settings.dbEnv, payload);
+        this.state.db.loaded = false;
+        toast.show("Настройки сохранены. Перезапустите приложение.", "success");
+      } catch (err) {
+        handleError(err);
+      }
+    });
+
+    node.querySelector("#reload-db-env")?.addEventListener("click", async () => {
+      this.state.db.loaded = false;
+      const replacement = await this.render();
+      node.replaceWith(replacement);
     });
   }
 

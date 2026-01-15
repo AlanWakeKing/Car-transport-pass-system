@@ -42,30 +42,57 @@
 - REST API + Swagger /docs, фронтенд на /.
 
 ## Быстрый старт (локально)
-```bash
+Перед началом убедитесь, что PostgreSQL запущен и доступен по `DATABASE_URL`.
+
+### Windows (PowerShell)
+```powershell
 cd Car-transport-pass-system
 
 # 1) Создать venv на Python 3.12
 py -3.12 -m venv venv312
 
 # 2) Установить зависимости
-venv312/Scripts/python.exe -m pip install -r requirements.txt
+.\venv312\Scripts\python.exe -m pip install -r requirements.txt
 
 # 3) Переменные окружения (при необходимости)
-set DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/propusk_system
-set SECRET_KEY=your_secret_key
+$env:DATABASE_URL="postgresql+psycopg://user:pass@localhost:5432/propusk_system"
+$env:SECRET_KEY="your_secret_key"
 
 # 4) Подготовить БД
-venv312/Scripts/python.exe init_db.py
-venv312/Scripts/python.exe seed_data.py
-venv312/Scripts/python.exe seed_propusks.py    # опционально
-venv312/Scripts/python.exe create_admin.py
+.\venv312\Scripts\python.exe init_db.py
+.\venv312\Scripts\python.exe seed_data.py
+.\venv312\Scripts\python.exe seed_propusks.py    # опционально
+.\venv312\Scripts\python.exe create_admin.py
 
 # 5) Запуск
-venv312/Scripts/python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+.\venv312\Scripts\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Также можно запускать через run.ps1, он использует venv312.
+Можно запускать через `run.ps1`, он использует `venv312`.
+
+### macOS / Linux (bash/zsh)
+```bash
+cd Car-transport-pass-system
+
+# 1) Создать venv на Python 3.12
+python3.12 -m venv venv312
+
+# 2) Установить зависимости
+./venv312/bin/python -m pip install -r requirements.txt
+
+# 3) Переменные окружения (при необходимости)
+export DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/propusk_system
+export SECRET_KEY=your_secret_key
+
+# 4) Подготовить БД
+./venv312/bin/python init_db.py
+./venv312/bin/python seed_data.py
+./venv312/bin/python seed_propusks.py    # опционально
+./venv312/bin/python create_admin.py
+
+# 5) Запуск
+./venv312/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
 Открыть:
 - Фронтенд: http://localhost:8000/
@@ -120,7 +147,19 @@ docker run --rm -p 8000:8000 \
 docker run --rm -p 8000:8000 --env-file .env propusk-system:latest
 ```
 
-### 2) Инициализация БД (init_db/seed)
+### 2) Запуск через docker compose
+```bash
+# 1) Заполните .env (POSTGRES_* и SECRET_KEY)
+# 2) Поднять сервисы
+docker compose up -d --build
+```
+
+Остановка:
+```bash
+docker compose down
+```
+
+### 3) Инициализация БД (init_db/seed)
 После первого запуска контейнеров выполните инициализацию:
 ```bash
 docker compose run --rm app python init_db.py
@@ -129,10 +168,21 @@ docker compose run --rm app python seed_propusks.py   # опционально
 docker compose run --rm app python create_admin.py
 ```
 
-### 3) Переменные окружения (.env)
+### 4) Переменные окружения (.env)
+Можно задать либо `DATABASE_URL`, либо набор `POSTGRES_*` (если `DATABASE_URL` не задан, он будет собран автоматически).
+
 Минимально нужны:
 ```
 DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/propusk_system
+SECRET_KEY=your_secret_key
+```
+Альтернатива через `POSTGRES_*`:
+```
+POSTGRES_DB=propusk_system
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
 SECRET_KEY=your_secret_key
 ```
 Дополнительно можно задать:
@@ -143,7 +193,7 @@ DEBUG=True
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 ```
 
-### 4) Полный чек‑лист запуска проекта (Docker)
+### 5) Полный чек‑лист запуска проекта (Docker)
 1. Скопируйте/обновите `.env` (DATABASE_URL, SECRET_KEY).
 2. Соберите образ: `docker build -t propusk-system:latest .`
 3. Запустите сервисы: `docker compose up -d`

@@ -10,7 +10,8 @@ export const ENDPOINTS = {
     templateVersions: "/api/settings/propusk-template/versions",
     reportTemplate: "/api/settings/report-template",
     reportActiveTemplate: "/api/settings/report-template/active",
-    reportTemplateVersions: "/api/settings/report-template/versions"
+    reportTemplateVersions: "/api/settings/report-template/versions",
+    dbEnv: "/api/settings/db-env"
   },
   references: {
     organizations: "/api/references/organizations",
