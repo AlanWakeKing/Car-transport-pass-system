@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     
     # Приложение
     APP_NAME: str = "Система управления пропусками"
-    APP_VERSION: str = "0.0.1"
+    APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
     
     class Config:

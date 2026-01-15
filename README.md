@@ -100,6 +100,8 @@ venv312/Scripts/python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 80
 - Для корректной кириллицы в PDF установите шрифты (python install_fonts.py).
 
 ## Docker
+### 1) Сборка и запуск через Docker
+
 Сборка образа:
 ```bash
 docker build -t propusk-system:latest .
@@ -117,3 +119,36 @@ docker run --rm -p 8000:8000 \
 ```bash
 docker run --rm -p 8000:8000 --env-file .env propusk-system:latest
 ```
+
+### 2) Инициализация БД (init_db/seed)
+После первого запуска контейнеров выполните инициализацию:
+```bash
+docker compose run --rm app python init_db.py
+docker compose run --rm app python seed_data.py
+docker compose run --rm app python seed_propusks.py   # опционально
+docker compose run --rm app python create_admin.py
+```
+
+### 3) Переменные окружения (.env)
+Минимально нужны:
+```
+DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/propusk_system
+SECRET_KEY=your_secret_key
+```
+Дополнительно можно задать:
+```
+APP_NAME=Пропуска
+APP_VERSION=1.0.0
+DEBUG=True
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+```
+
+### 4) Полный чек‑лист запуска проекта (Docker)
+1. Скопируйте/обновите `.env` (DATABASE_URL, SECRET_KEY).
+2. Соберите образ: `docker build -t propusk-system:latest .`
+3. Запустите сервисы: `docker compose up -d`
+4. Инициализируйте БД (init_db/seed) командами выше.
+5. Откройте:
+   - Фронтенд: http://localhost:8000/
+   - API/Swagger: http://localhost:8000/docs
+   - Health-check: http://localhost:8000/health
