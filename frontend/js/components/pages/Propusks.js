@@ -3,7 +3,7 @@ import { apiGet, apiPost, apiPatch, apiDelete, handleError, downloadFile } from 
 import { renderStatusChip } from "../../utils/statusConfig.js";
 import { toast } from "../common/Toast.js";
 import { canViewPropusks, canCreatePropusks, canEditPropusks, canActivatePropusks, canDeletePropusks, canAnnulPropusks, canMarkDelete, canDownload } from "../../utils/permissions.js";
-import { requireDateOrder, requireValue } from "../../utils/validators.js";
+import { requireDateOrder, requireValue, formatGosNumber, requireGosNumber } from "../../utils/validators.js";
 import { modal } from "../common/Modal.js";
 
 export class PropusksPage {
@@ -199,6 +199,12 @@ export class PropusksPage {
   fillModels(select) {
     if (!select) return;
     const models = this.state.references?.models || [];
+    if (!models.length) {
+      select.innerHTML = `<option value="">Сначала выберите марку</option>`;
+      select.disabled = true;
+      return;
+    }
+    select.disabled = false;
     select.innerHTML = `<option value="">Выберите модель</option>` + models.map((m) => `<option value="${m.id_model}">${m.model_name}</option>`).join("");
   }
 
@@ -227,9 +233,9 @@ export class PropusksPage {
     form.className = "section";
     form.innerHTML = `
       <div class="form-grid">
-        <div class="md-field">
+        <div class="md-field" style="grid-column:1/-1;">
           <label>Госномер</label>
-          <input class="md-input" name="gos_id" placeholder="A123BC" required>
+          <input class="md-input" name="gos_id" placeholder="A 888 AA 790" maxlength="11" pattern="[A-Za-z]{1}\\s?[0-9]{3}\\s?[A-Za-z]{2}\\s?[0-9]{3}" title="Формат: A 888 AA 790 (только латиница)" required>
         </div>
         <div class="md-field">
           <label>Марка</label>
@@ -240,7 +246,9 @@ export class PropusksPage {
         </div>
         <div class="md-field">
           <label>Модель</label>
-          <select class="md-select" name="id_model_auto" required></select>
+          <select class="md-select" name="id_model_auto" required disabled>
+            <option value="">Сначала выберите марку</option>
+          </select>
         </div>
         <div class="md-field">
           <label>Компания</label>
@@ -276,14 +284,28 @@ export class PropusksPage {
     `;
 
     const instance = modal.show({ title: "Новый пропуск", content: form });
+    const gosInput = form.querySelector('[name="gos_id"]');
     const modelSelect = form.querySelector('[name="id_model_auto"]');
     const orgSelect = form.querySelector('[name="id_org"]');
     const driverSelect = form.querySelector('[name="id_fio"]');
     this.fillDrivers(driverSelect, orgSelect?.value);
+    gosInput?.addEventListener("input", () => {
+      gosInput.value = gosInput.value.toUpperCase().replace(/[^A-Z0-9 ]/g, "");
+    });
+    gosInput?.addEventListener("blur", () => {
+      gosInput.value = formatGosNumber(gosInput.value);
+    });
+    if (gosInput) gosInput.value = formatGosNumber(gosInput.value);
     form.addEventListener("change", async (e) => {
       if (e.target.name === "id_mark_auto") {
-        await this.fetchModels(e.target.value);
-        this.fillModels(modelSelect);
+        if (!e.target.value) {
+          this.state.references.models = [];
+          modelSelect.innerHTML = `<option value="">Сначала выберите марку</option>`;
+          modelSelect.disabled = true;
+        } else {
+          await this.fetchModels(e.target.value);
+          this.fillModels(modelSelect);
+        }
       }
       if (e.target.name === "id_org") {
         this.fillDrivers(driverSelect, e.target.value);
@@ -296,7 +318,9 @@ export class PropusksPage {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
       try {
+        data.gos_id = formatGosNumber(data.gos_id);
         requireValue(data.gos_id, "Введите госномер");
+        requireGosNumber(data.gos_id);
         requireDateOrder(data.release_date, data.valid_until);
         await apiPost(ENDPOINTS.propusks, data);
         toast.show("Пропуск создан", "success");
@@ -315,9 +339,9 @@ export class PropusksPage {
     form.className = "section";
     form.innerHTML = `
       <div class="form-grid">
-        <div class="md-field">
+        <div class="md-field" style="grid-column:1/-1;">
           <label>Госномер</label>
-          <input class="md-input" name="gos_id" value="${propusk.gos_id || ""}" required>
+          <input class="md-input" name="gos_id" value="${propusk.gos_id || ""}" placeholder="A 888 AA 790" maxlength="11" pattern="[A-Za-z]{1}\\s?[0-9]{3}\\s?[A-Za-z]{2}\\s?[0-9]{3}" title="Формат: A 888 AA 790 (только латиница)" required>
         </div>
         <div class="md-field">
           <label>Марка</label>
@@ -328,7 +352,9 @@ export class PropusksPage {
         </div>
         <div class="md-field">
           <label>Модель</label>
-          <select class="md-select" name="id_model_auto" required></select>
+          <select class="md-select" name="id_model_auto" required disabled>
+            <option value="">Сначала выберите марку</option>
+          </select>
         </div>
         <div class="md-field">
           <label>Компания</label>
@@ -364,9 +390,17 @@ export class PropusksPage {
     `;
 
     const instance = modal.show({ title: `Редактировать пропуск #${propusk.id_propusk}`, content: form });
+    const gosInput = form.querySelector('[name="gos_id"]');
     const modelSelect = form.querySelector('[name="id_model_auto"]');
     const orgSelect = form.querySelector('[name="id_org"]');
     const driverSelect = form.querySelector('[name="id_fio"]');
+
+    gosInput?.addEventListener("input", () => {
+      gosInput.value = gosInput.value.toUpperCase().replace(/[^A-Z0-9 ]/g, "");
+    });
+    gosInput?.addEventListener("blur", () => {
+      gosInput.value = formatGosNumber(gosInput.value);
+    });
 
     if (propusk.id_mark_auto) {
       await this.fetchModels(propusk.id_mark_auto);
@@ -377,8 +411,14 @@ export class PropusksPage {
 
     form.addEventListener("change", async (e) => {
       if (e.target.name === "id_mark_auto") {
-        await this.fetchModels(e.target.value);
-        this.fillModels(modelSelect);
+        if (!e.target.value) {
+          this.state.references.models = [];
+          modelSelect.innerHTML = `<option value="">Сначала выберите марку</option>`;
+          modelSelect.disabled = true;
+        } else {
+          await this.fetchModels(e.target.value);
+          this.fillModels(modelSelect);
+        }
       }
       if (e.target.name === "id_org") {
         this.fillDrivers(driverSelect, e.target.value);
@@ -391,7 +431,9 @@ export class PropusksPage {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
       try {
+        data.gos_id = formatGosNumber(data.gos_id);
         requireValue(data.gos_id, "Введите госномер");
+        requireGosNumber(data.gos_id);
         requireDateOrder(data.release_date, data.valid_until);
         data.id_mark_auto = Number(data.id_mark_auto);
         data.id_model_auto = Number(data.id_model_auto);
