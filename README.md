@@ -102,8 +102,15 @@ export COOKIE_SAMESITE=lax
 
 Открыть:
 - Фронтенд: http://localhost:8000/
+- Telegram mini-web app: http://localhost:8000/telegram-auth
 - API/Swagger: http://localhost:8000/docs
 - Health-check: http://localhost:8000/health
+
+## Telegram авторизация через mini-web app
+1. Пользователь открывает `/telegram-auth` из бота (Web App).
+2. Вводит логин/пароль.
+3. Нажимает "Привязать" — `tg_user_id` сохраняется в профиле.
+4. При наличии `N8N_TG_WELCOME_WEBHOOK_URL` отправляется webhook с событием `telegram_linked`.
 
 ## Настройки
 Во фронтенде "Настройки" разделены на вкладки:
@@ -114,6 +121,7 @@ export COOKIE_SAMESITE=lax
 - DATABASE_URL - строка подключения PostgreSQL.
 - SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES - JWT.
 - TELEGRAM_BOT_TOKEN, TELEGRAM_AUTH_MAX_AGE_SECONDS - Telegram Login.
+- N8N_TG_WELCOME_WEBHOOK_URL - webhook n8n для отправки приветственного сообщения (опционально).
 - CORS_ALLOW_ORIGINS - список разрешённых origin через запятую.
 - COOKIE_SECURE, COOKIE_SAMESITE - параметры httpOnly cookie.
 - APP_NAME, APP_VERSION, DEBUG.
@@ -210,6 +218,7 @@ DEBUG=True
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_AUTH_MAX_AGE_SECONDS=86400
+N8N_TG_WELCOME_WEBHOOK_URL=https://n8n.example/webhook/telegram-welcome
 ```
 
 ### 5) Полный чек‑лист запуска проекта (Docker)

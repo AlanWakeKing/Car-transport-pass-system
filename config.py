@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     # Telegram login
     TELEGRAM_BOT_TOKEN: str | None = None
     TELEGRAM_AUTH_MAX_AGE_SECONDS: int = 60 * 60 * 24  # 24 hours
+    N8N_TG_WELCOME_WEBHOOK_URL: str | None = None
 
     # CORS
     CORS_ALLOW_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000,https://parking.kinoteka.space/"

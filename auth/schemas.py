@@ -58,6 +58,10 @@ class TelegramLoginRequest(BaseModel):
     photo_url: Optional[str] = None
 
 
+class TelegramLinkRequest(BaseModel):
+    tg_user_id: int
+
+
 # Ответ с токеном
 class Token(BaseModel):
     access_token: str

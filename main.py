@@ -133,6 +133,18 @@ def root():
         }
 
 
+# Telegram mini-web app (auth)
+@app.get("/telegram-auth")
+def telegram_auth():
+    frontend_path = os.path.join(frontend_dir, "telegram-auth.html")
+    if os.path.exists(frontend_path):
+        return FileResponse(frontend_path, media_type="text/html; charset=utf-8")
+    return {
+        "error": "not_found",
+        "message": "telegram-auth.html not found in frontend directory"
+    }
+
+
 # Health check
 @app.get("/health")
 def health_check():

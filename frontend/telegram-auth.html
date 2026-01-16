@@ -1,0 +1,52 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram авторизация</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/telegram-auth.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <main class="page">
+    <section class="card" id="step-login">
+      <h1>Вход в систему</h1>
+      <p class="muted">Введите логин и пароль, чтобы привязать Telegram аккаунт.</p>
+      <form id="login-form" autocomplete="off">
+        <label class="field">
+          <span>Логин</span>
+          <input type="text" name="username" required minlength="3" autocomplete="username">
+        </label>
+        <label class="field">
+          <span>Пароль</span>
+          <input type="password" name="password" required minlength="6" autocomplete="current-password">
+        </label>
+        <button type="submit" class="primary" id="login-submit">Продолжить</button>
+      </form>
+      <p class="error" id="login-error" hidden></p>
+    </section>
+
+    <section class="card hidden" id="step-link">
+      <h1>Привязка Telegram ID</h1>
+      <p class="muted" id="tg-hint">Получаем данные Telegram...</p>
+      <label class="field">
+        <span>Telegram ID</span>
+        <input type="number" name="tg_user_id" id="tg-user-id" required>
+      </label>
+      <button class="primary" id="link-submit">Привязать</button>
+      <p class="error" id="link-error" hidden></p>
+    </section>
+
+    <section class="card hidden" id="step-success">
+      <h1>Авторизация выполнена</h1>
+      <p class="muted" id="success-text">Можно вернуться в Telegram. Это окно закроется автоматически.</p>
+      <button class="ghost" id="close-now">Закрыть сейчас</button>
+    </section>
+  </main>
+
+  <script type="module" src="./js/telegram-auth.js"></script>
+</body>
+</html>

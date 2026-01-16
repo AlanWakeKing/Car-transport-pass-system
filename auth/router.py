@@ -9,11 +9,13 @@ from threading import Lock
 import time
 from typing import List
 import json
+from urllib import request as urllib_request
+from urllib import error as urllib_error
 
 from database import get_db
 from config import settings
 from models import User, UserRole
-from auth.schemas import UserCreate, UserResponse, UserUpdate, Token, LoginRequest, TelegramLoginRequest
+from auth.schemas import UserCreate, UserResponse, UserUpdate, Token, LoginRequest, TelegramLoginRequest, TelegramLinkRequest
 from auth.service import AuthService
 from auth.permissions import normalize_permissions, defaults_for_role
 from auth.dependencies import get_current_active_user, require_admin
@@ -39,6 +41,31 @@ def rate_limit(request: Request, limit: int = 10, window_seconds: int = 60):
                 detail="Слишком много попыток. Повторите позже."
             )
         bucket.append(now)
+
+
+def send_n8n_welcome_webhook(user: User) -> None:
+    webhook_url = settings.N8N_TG_WELCOME_WEBHOOK_URL
+    if not webhook_url:
+        return
+    payload = {
+        "event": "telegram_linked",
+        "user_id": user.id,
+        "username": user.username,
+        "full_name": user.full_name,
+        "tg_user_id": user.tg_user_id,
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib_request.Request(
+        webhook_url,
+        data=data,
+        headers={"content-type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib_request.urlopen(req, timeout=5):
+            return
+    except urllib_error.URLError as exc:
+        print(f"N8N webhook error: {exc}")
 
 
 @router.post("/login", response_model=Token)
@@ -154,6 +181,39 @@ def logout(response: Response):
     """
     response.delete_cookie(key="access_token")
     return {"message": "ok"}
+
+
+@router.post("/link-telegram", response_model=UserResponse)
+def link_telegram(
+    payload: TelegramLinkRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    _limit=Depends(rate_limit)
+):
+    """
+    Привязка Telegram ID к текущему пользователю
+    """
+    if payload.tg_user_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Telegram ID должен быть положительным числом"
+        )
+    existing_user = (
+        db.query(User)
+        .filter(User.tg_user_id == payload.tg_user_id, User.id != current_user.id)
+        .first()
+    )
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Этот Telegram ID уже привязан к другому пользователю"
+        )
+
+    current_user.tg_user_id = payload.tg_user_id
+    db.commit()
+    db.refresh(current_user)
+    send_n8n_welcome_webhook(current_user)
+    return current_user
 
 
 @router.get("/me", response_model=UserResponse)
