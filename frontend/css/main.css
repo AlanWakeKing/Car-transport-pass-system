@@ -162,6 +162,21 @@
   gap: 1rem;
 }
 
+.pass-type-controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pass-type-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--md-text);
+}
+
 .propusk-edit-grid {
   display: grid;
   grid-template-columns: minmax(220px, 0.9fr) minmax(320px, 1.6fr);

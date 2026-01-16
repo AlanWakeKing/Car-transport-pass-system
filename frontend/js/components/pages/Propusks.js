@@ -1,5 +1,5 @@
 ﻿import { ENDPOINTS } from "../../config/constants.js";
-import { apiGet, apiPost, apiPatch, apiDelete, handleError, downloadFile } from "../../api/client.js";
+import { apiGet, apiPost, apiPatch, apiDelete, handleError, openFileInNewTab } from "../../api/client.js";
 import { renderStatusChip } from "../../utils/statusConfig.js";
 import { toast } from "../common/Toast.js";
 import { canViewPropusks, canCreatePropusks, canEditPropusks, canActivatePropusks, canDeletePropusks, canAnnulPropusks, canMarkDelete, canDownload } from "../../utils/permissions.js";
@@ -10,6 +10,7 @@ export class PropusksPage {
   constructor(context) {
     this.context = context;
     this.state = { propusks: [], filters: { search: "" }, references: null };
+    this.searchTimer = null;
   }
 
   async loadData() {
@@ -198,7 +199,7 @@ export class PropusksPage {
             <h3 style="margin:0;">Реестр обращений</h3>
           </div>
           <div class="filters">
-            <input class="md-input" id="filter-search" placeholder="Поиск по номеру или ФИО" value="${this.state.filters.search || ""}">
+            <input class="md-input" id="filter-search" placeholder="Поиск по номеру, ФИО или организации" value="${this.state.filters.search || ""}">
             <select class="md-select" id="filter-status" value="${this.state.filters.status || ""}">
               <option value="">Все статусы</option>
               <option value="draft">Черновик</option>
@@ -276,12 +277,23 @@ export class PropusksPage {
   }
 
   bind(node) {
-    node.querySelector("#apply-filters")?.addEventListener("click", async () => {
+    const applyFilters = async () => {
       const search = node.querySelector("#filter-search").value;
       const status = node.querySelector("#filter-status").value;
       this.state.filters = { search, status };
       await this.loadData();
       this.renderRows(node.querySelector("#propusk-rows"));
+    };
+
+    node.querySelector("#apply-filters")?.addEventListener("click", async () => {
+      await applyFilters();
+    });
+
+    node.querySelector("#filter-search")?.addEventListener("input", () => {
+      if (this.searchTimer) clearTimeout(this.searchTimer);
+      this.searchTimer = setTimeout(async () => {
+        await applyFilters();
+      }, 350);
     });
 
     node.querySelector("#propusk-rows")?.addEventListener("click", async (e) => {
@@ -363,6 +375,53 @@ export class PropusksPage {
       .join("");
   }
 
+  renderPassTypeControls(passType) {
+    const isParking = passType === "parking";
+    const isDrive = passType === "drive";
+    return `
+      <div class="md-field" style="grid-column:1/-1;">
+        <label>Тип пропуска</label>
+        <div class="pass-type-controls">
+          <label class="pass-type-option">
+            <input type="checkbox" id="pass-type-parking" ${isParking ? "checked" : ""}>
+            На стоянку
+          </label>
+          <label class="pass-type-option">
+            <input type="checkbox" id="pass-type-drive" ${isDrive ? "checked" : ""}>
+            Проезд по территории
+          </label>
+        </div>
+      </div>
+    `;
+  }
+
+  bindPassTypeControls(form) {
+    const parkingBox = form.querySelector("#pass-type-parking");
+    const driveBox = form.querySelector("#pass-type-drive");
+    const sync = (source, other) => {
+      if (source.checked) {
+        other.checked = false;
+        other.disabled = true;
+      } else {
+        other.disabled = false;
+      }
+    };
+    if (parkingBox && driveBox) {
+      sync(parkingBox, driveBox);
+      sync(driveBox, parkingBox);
+      parkingBox.addEventListener("change", () => sync(parkingBox, driveBox));
+      driveBox.addEventListener("change", () => sync(driveBox, parkingBox));
+    }
+  }
+
+  getPassTypeValue(form) {
+    const parkingBox = form.querySelector("#pass-type-parking");
+    const driveBox = form.querySelector("#pass-type-drive");
+    if (parkingBox?.checked) return "parking";
+    if (driveBox?.checked) return "drive";
+    return "";
+  }
+
   openCreateModal() {
     const form = document.createElement("form");
     form.className = "section";
@@ -411,6 +470,7 @@ export class PropusksPage {
           <label>Комментарий</label>
           <textarea class="md-textarea" name="info" placeholder="Описание условий, номер заявки"></textarea>
         </div>
+        ${this.renderPassTypeControls("")}
       </div>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-create">Отмена</button>
@@ -424,6 +484,7 @@ export class PropusksPage {
     const orgSelect = form.querySelector('[name="id_org"]');
     const driverSelect = form.querySelector('[name="id_fio"]');
     this.fillDrivers(driverSelect, orgSelect?.value);
+    this.bindPassTypeControls(form);
     gosInput?.addEventListener("input", () => {
       gosInput.value = gosInput.value.toUpperCase().replace(/[^A-Z0-9 ]/g, "");
     });
@@ -457,6 +518,8 @@ export class PropusksPage {
         requireValue(data.gos_id, "Введите госномер");
         requireGosNumber(data.gos_id);
         requireDateOrder(data.release_date, data.valid_until);
+        data.pass_type = this.getPassTypeValue(form);
+        requireValue(data.pass_type, "Выберите тип пропуска");
         await apiPost(ENDPOINTS.propusks, data);
         toast.show("Пропуск создан", "success");
         instance.close();
@@ -527,6 +590,7 @@ export class PropusksPage {
             <label>Комментарий</label>
             <textarea class="md-textarea" name="info" placeholder="Описание условий, номер заявки">${propusk.info || ""}</textarea>
           </div>
+          ${this.renderPassTypeControls(propusk.pass_type || "drive")}
         </div>
       </div>
       <div class="modal-footer">
@@ -564,6 +628,7 @@ export class PropusksPage {
       if (modelSelect) modelSelect.value = String(propusk.id_model_auto || "");
     }
     this.fillDrivers(driverSelect, orgSelect?.value, propusk.id_fio);
+    this.bindPassTypeControls(form);
 
     form.addEventListener("change", async (e) => {
       if (e.target.name === "id_mark_auto") {
@@ -591,6 +656,8 @@ export class PropusksPage {
         requireValue(data.gos_id, "Введите госномер");
         requireGosNumber(data.gos_id);
         requireDateOrder(data.release_date, data.valid_until);
+        data.pass_type = this.getPassTypeValue(form);
+        requireValue(data.pass_type, "Выберите тип пропуска");
         data.id_mark_auto = Number(data.id_mark_auto);
         data.id_model_auto = Number(data.id_model_auto);
         data.id_org = Number(data.id_org);
@@ -633,8 +700,8 @@ export class PropusksPage {
 
   async downloadPdf(id) {
     try {
-      await downloadFile(`${ENDPOINTS.propusks}/${id}/pdf`, `propusk_${id}.pdf`);
-      toast.show("PDF выгружен", "success");
+      await openFileInNewTab(`${ENDPOINTS.propusks}/${id}/pdf`);
+      toast.show("PDF открыт", "success");
     } catch (err) {
       handleError(err);
     }

@@ -14,6 +14,7 @@ class PropuskBase(BaseModel):
     id_mark_auto: int
     id_model_auto: int
     id_org: int
+    pass_type: str = Field(default="drive", max_length=20)
     release_date: date
     valid_until: date
     id_fio: int
@@ -35,6 +36,7 @@ class PropuskUpdate(BaseModel):
     id_mark_auto: Optional[int] = None
     id_model_auto: Optional[int] = None
     id_org: Optional[int] = None
+    pass_type: Optional[str] = Field(None, max_length=20)
     release_date: Optional[date] = None
     valid_until: Optional[date] = None
     id_fio: Optional[int] = None

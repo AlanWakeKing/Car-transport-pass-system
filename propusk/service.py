@@ -24,6 +24,9 @@ class PropuskService:
         """
         # Проверяем существование связанных записей
         PropuskService._validate_references(db, propusk_data)
+
+        if not propusk_data.get("pass_type"):
+            propusk_data["pass_type"] = "drive"
         
         # Создаём пропуск
         propusk = Propusk(
@@ -75,6 +78,7 @@ class PropuskService:
             "id_mark_auto": propusk.id_mark_auto,
             "id_model_auto": propusk.id_model_auto,
             "id_org": propusk.id_org,
+            "pass_type": propusk.pass_type,
             "release_date": str(propusk.release_date),
             "valid_until": str(propusk.valid_until),
             "id_fio": propusk.id_fio,
@@ -392,9 +396,10 @@ class PropuskService:
         
         # Поиск по гос. номеру или ФИО владельца
         if search:
-            query = query.join(Abonent).filter(
+            query = query.join(Abonent).join(Organiz).filter(
                 or_(
                     Propusk.gos_id.ilike(f"%{search}%"),
+                    Organiz.org_name.ilike(f"%{search}%"),
                     Abonent.surname.ilike(f"%{search}%"),
                     Abonent.name.ilike(f"%{search}%"),
                     Abonent.otchestvo.ilike(f"%{search}%")

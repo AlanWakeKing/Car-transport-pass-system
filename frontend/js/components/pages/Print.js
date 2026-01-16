@@ -1,5 +1,5 @@
 import { ENDPOINTS } from "../../config/constants.js";
-import { apiGet, downloadFile, downloadPost, handleError } from "../../api/client.js";
+import { apiGet, openPostInNewTab, handleError } from "../../api/client.js";
 import { renderStatusChip } from "../../utils/statusConfig.js";
 import { toast } from "../common/Toast.js";
 
@@ -211,7 +211,7 @@ export class PrintPage {
 
   async printBatch(ids) {
     try {
-      await downloadPost(`${ENDPOINTS.propusks}/pdf/batch`, ids, "propusks.pdf");
+      await openPostInNewTab(`${ENDPOINTS.propusks}/pdf/batch`, ids);
       toast.show("PDF сформирован", "success");
     } catch (err) {
       handleError(err);
@@ -227,7 +227,7 @@ export class PrintPage {
         toast.show("Нет активных пропусков для этой организации", "info");
         return;
       }
-      await downloadPost(`${ENDPOINTS.propusks}/pdf/batch`, ids, `org_${orgId}_propusks.pdf`);
+      await openPostInNewTab(`${ENDPOINTS.propusks}/pdf/batch`, ids);
       toast.show("PDF сформирован", "success");
     } catch (err) {
       handleError(err);

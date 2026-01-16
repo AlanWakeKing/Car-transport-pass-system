@@ -141,6 +141,7 @@ class Propusk(Base):
     id_mark_auto = Column(Integer, ForeignKey("mark_auto.id_mark"), nullable=False)
     id_model_auto = Column(Integer, ForeignKey("model_auto.id_model"), nullable=False)
     id_org = Column(Integer, ForeignKey("organiz.id_org"), nullable=False)
+    pass_type = Column(String(20), nullable=False, server_default="drive")  # Тип пропуска
     release_date = Column(Date, nullable=False)  # Дата выпуска
     valid_until = Column(Date, nullable=False)  # Действителен до
     id_fio = Column(Integer, ForeignKey("abonent.id_fio"), nullable=False)

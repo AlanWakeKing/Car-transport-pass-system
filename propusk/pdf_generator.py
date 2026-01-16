@@ -304,6 +304,7 @@ class PropuskPDFGenerator:
             "model_name": propusk.model.model_name if propusk.model else "",
             "org_name": propusk.organization.org_name if propusk.organization else "",
             "abonent_fio": propusk.abonent.full_name if propusk.abonent else "",
+            "pass_type": "На стоянку" if propusk.pass_type == "parking" else "Проезд по территории",
             "valid_until": propusk.valid_until.strftime("%d.%m.%Y") if propusk.valid_until else "",
             "release_date": propusk.release_date.strftime("%d.%m.%Y") if propusk.release_date else "",
             "year": year_text,

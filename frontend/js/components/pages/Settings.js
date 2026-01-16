@@ -9,6 +9,7 @@ const PROPUSK_FIELDS = [
   { key: "model_name", label: "Модель" },
   { key: "org_name", label: "Организация" },
   { key: "abonent_fio", label: "ФИО абонента" },
+  { key: "pass_type", label: "Тип пропуска" },
   { key: "valid_until", label: "Действителен до" },
   { key: "release_date", label: "Дата выдачи" },
   { key: "year", label: "Год" }

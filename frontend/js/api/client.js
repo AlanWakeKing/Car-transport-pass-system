@@ -125,3 +125,22 @@ export async function downloadPost(path, body, filename = "file.pdf") {
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+export async function openPostInNewTab(path, body) {
+  const headers = {};
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+  headers["Content-Type"] = "application/json";
+  const resp = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body || {})
+  });
+  if (!resp.ok) {
+    let detail = await resp.text();
+    throw new Error(detail || "Не удалось открыть файл");
+  }
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
