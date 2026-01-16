@@ -52,7 +52,6 @@ async function showLogin() {
     const data = Object.fromEntries(new FormData(form).entries());
     try {
       const resp = await apiPost(ENDPOINTS.login, data);
-      context.setToken(resp.access_token);
       await context.bootstrapUser();
       toast.show("Добро пожаловать", "success");
       await showApp();
@@ -83,9 +82,9 @@ async function showApp() {
   shell = new AppShell(appRoot, {
     onNavigate: (page) => renderPage(page),
     onNavigateWithFilters: (page, filters) => navigateWithFilters(page, filters),
-    onLogout: () => {
-      context.logout();
-      showLogin();
+    onLogout: async () => {
+      await context.logout();
+      await showLogin();
     }
   });
   context.on("navigate", ({ page, filters }) => navigateWithFilters(page, filters));
@@ -95,14 +94,14 @@ async function showApp() {
 }
 
 async function bootstrap() {
-  if (context.state.token) {
-    try {
-      await context.bootstrapUser();
+  try {
+    await context.bootstrapUser();
+    if (context.state.user) {
       await showApp();
       return;
-    } catch (err) {
-      context.logout();
     }
+  } catch (err) {
+    await context.logout();
   }
   await showLogin();
 }

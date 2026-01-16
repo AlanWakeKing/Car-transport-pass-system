@@ -1,13 +1,17 @@
 ﻿"""
 API endpoints для авторизации и управления пользователями
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from collections import deque
+from threading import Lock
+import time
 from typing import List
 import json
 
 from database import get_db
+from config import settings
 from models import User, UserRole
 from auth.schemas import UserCreate, UserResponse, UserUpdate, Token, LoginRequest, TelegramLoginRequest
 from auth.service import AuthService
@@ -17,11 +21,32 @@ from auth.dependencies import get_current_active_user, require_admin
 
 router = APIRouter(prefix="/api/auth", tags=["Авторизация"])
 
+_rate_lock = Lock()
+_rate_hits: dict[str, deque] = {}
+
+
+def rate_limit(request: Request, limit: int = 10, window_seconds: int = 60):
+    client = request.client.host if request.client else "unknown"
+    key = f"{client}:{request.url.path}"
+    now = time.time()
+    with _rate_lock:
+        bucket = _rate_hits.setdefault(key, deque())
+        while bucket and now - bucket[0] > window_seconds:
+            bucket.popleft()
+        if len(bucket) >= limit:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Слишком много попыток. Повторите позже."
+            )
+        bucket.append(now)
+
 
 @router.post("/login", response_model=Token)
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+    response: Response = None,
+    db: Session = Depends(get_db),
+    _limit=Depends(rate_limit)
 ):
     """
     Вход в систему (получение JWT токена)
@@ -39,14 +64,24 @@ def login(
     access_token = AuthService.create_access_token(
         data={"sub": str(user.id), "username": user.username, "role": user.role.value}
     )
-    
+
+    if response is not None:
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE
+        )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/login-json", response_model=Token)
 def login_json(
     credentials: LoginRequest,
-    db: Session = Depends(get_db)
+    response: Response,
+    db: Session = Depends(get_db),
+    _limit=Depends(rate_limit)
 ):
     """
     Вход в систему через JSON (альтернативный вариант для фронтенда)
@@ -62,19 +97,35 @@ def login_json(
     access_token = AuthService.create_access_token(
         data={"sub": str(user.id), "username": user.username, "role": user.role.value}
     )
-    
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/login-telegram", response_model=Token)
 def login_telegram(
     payload: TelegramLoginRequest,
-    db: Session = Depends(get_db)
+    response: Response,
+    db: Session = Depends(get_db),
+    _limit=Depends(rate_limit)
 ):
     """
     Вход в систему через Telegram (по tg_user_id)
     """
-    user = db.query(User).filter(User.tg_user_id == payload.tg_user_id).first()
+    payload_dict = payload.dict(exclude_none=True)
+    if not AuthService.verify_telegram_login(payload_dict):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Невалидная подпись Telegram"
+        )
+
+    user = db.query(User).filter(User.tg_user_id == payload.id).first()
 
     if not user or not user.is_active:
         raise HTTPException(
@@ -86,7 +137,23 @@ def login_telegram(
         data={"sub": str(user.id), "username": user.username, "role": user.role.value}
     )
 
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE
+    )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """
+    Выход из системы (очистка cookies)
+    """
+    response.delete_cookie(key="access_token")
+    return {"message": "ok"}
 
 
 @router.get("/me", response_model=UserResponse)

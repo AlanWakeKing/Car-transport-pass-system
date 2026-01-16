@@ -88,7 +88,9 @@ export class AppShell {
     });
 
     const logout = this.root.querySelector("#logout-btn");
-    logout?.addEventListener("click", () => this.onLogout());
+    logout?.addEventListener("click", async () => {
+      await this.onLogout();
+    });
   }
 
   updateActive() {

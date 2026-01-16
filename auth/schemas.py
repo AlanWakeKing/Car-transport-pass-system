@@ -49,7 +49,13 @@ class LoginRequest(BaseModel):
 
 
 class TelegramLoginRequest(BaseModel):
-    tg_user_id: int
+    id: int
+    auth_date: int
+    hash: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
 
 
 # Ответ с токеном

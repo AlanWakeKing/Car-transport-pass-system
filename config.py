@@ -24,6 +24,17 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 часа
     
     # Приложение
+    # Telegram login
+    TELEGRAM_BOT_TOKEN: str | None = None
+    TELEGRAM_AUTH_MAX_AGE_SECONDS: int = 60 * 60 * 24  # 24 hours
+
+    # CORS
+    CORS_ALLOW_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000"
+
+    # Cookies
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"
+
     APP_NAME: str = "Система управления пропусками"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
@@ -31,6 +42,11 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+
+    @property
+    def cors_allow_origins_list(self) -> list[str]:
+        raw = self.CORS_ALLOW_ORIGINS or ""
+        return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
     def model_post_init(self, __context) -> None:
         if not self.DATABASE_URL:

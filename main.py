@@ -50,7 +50,7 @@ app = FastAPI(
 # CORS (для фронтенда)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В production указать конкретные домены
+    allow_origins=settings.cors_allow_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

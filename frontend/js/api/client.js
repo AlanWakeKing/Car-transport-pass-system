@@ -21,7 +21,7 @@ async function request(path, options = {}) {
     options.body = JSON.stringify(options.body);
   }
 
-  const resp = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const resp = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: "include" });
 
   if (resp.status === 401) {
     throw new Error("Требуется вход. Авторизация истекла.");
@@ -71,7 +71,7 @@ export function handleError(error) {
 export async function downloadFile(path, filename = "file") {
   const headers = {};
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
-  const resp = await fetch(`${API_BASE}${path}`, { headers });
+  const resp = await fetch(`${API_BASE}${path}`, { headers, credentials: "include" });
   if (!resp.ok) {
     let detail = await resp.text();
     throw new Error(detail || "Не удалось скачать файл");
@@ -90,7 +90,7 @@ export async function downloadFile(path, filename = "file") {
 export async function openFileInNewTab(path) {
   const headers = {};
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
-  const resp = await fetch(`${API_BASE}${path}`, { headers });
+  const resp = await fetch(`${API_BASE}${path}`, { headers, credentials: "include" });
   if (!resp.ok) {
     let detail = await resp.text();
     throw new Error(detail || "Не удалось открыть файл");
@@ -109,7 +109,8 @@ export async function downloadPost(path, body, filename = "file.pdf") {
   const resp = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers,
-    body: JSON.stringify(body || {})
+    body: JSON.stringify(body || {}),
+    credentials: "include"
   });
   if (!resp.ok) {
     let detail = await resp.text();
@@ -133,7 +134,8 @@ export async function openPostInNewTab(path, body) {
   const resp = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers,
-    body: JSON.stringify(body || {})
+    body: JSON.stringify(body || {}),
+    credentials: "include"
   });
   if (!resp.ok) {
     let detail = await resp.text();

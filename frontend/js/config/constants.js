@@ -3,6 +3,7 @@ export const API_BASE = "";
 export const ENDPOINTS = {
   login: "/api/auth/login-json",
   me: "/api/auth/me",
+  logout: "/api/auth/logout",
   users: "/api/auth/users",
   settings: {
     template: "/api/settings/propusk-template",

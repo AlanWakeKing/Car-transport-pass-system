@@ -1,7 +1,7 @@
 ﻿"""
 Dependencies для проверки авторизации и прав доступа
 """
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from typing import List
@@ -13,11 +13,12 @@ from auth.permissions import PERMISSION_KEYS, normalize_permissions, defaults_fo
 
 
 # OAuth2 схема для токенов
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
     """
@@ -30,6 +31,10 @@ def get_current_user(
     )
     
     try:
+        if not token:
+            token = request.cookies.get("access_token")
+        if not token:
+            raise credentials_exception
         payload = AuthService.decode_token(token)
         user_id_str: str = payload.get("sub")
         if user_id_str is None:

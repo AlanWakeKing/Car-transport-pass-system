@@ -1,18 +1,15 @@
 import { ENDPOINTS } from "../config/constants.js";
-import { apiGet, setAuthToken } from "../api/client.js";
+import { apiGet, apiPost, setAuthToken } from "../api/client.js";
 
 export class AppContext {
   constructor() {
     this.state = {
-      token: localStorage.getItem("auth_token"),
+      token: null,
       user: null,
       ui: {
         propuskFilters: { status: "" }
       }
     };
-    if (this.state.token) {
-      setAuthToken(this.state.token);
-    }
     this.listeners = new Map();
   }
 
@@ -31,10 +28,8 @@ export class AppContext {
   setToken(token) {
     this.state.token = token;
     if (token) {
-      localStorage.setItem("auth_token", token);
       setAuthToken(token);
     } else {
-      localStorage.removeItem("auth_token");
       setAuthToken(null);
     }
     this.emit("auth-change", this.state);
@@ -50,13 +45,17 @@ export class AppContext {
     this.emit("ui-change", this.state.ui);
   }
 
-  logout() {
+  async logout() {
+    try {
+      await apiPost(ENDPOINTS.logout, {});
+    } catch {
+      // ignore network errors on logout
+    }
     this.setToken(null);
     this.setUser(null);
   }
 
   async bootstrapUser() {
-    if (!this.state.token) return;
     const me = await apiGet(ENDPOINTS.me);
     this.setUser(me);
   }

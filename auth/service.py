@@ -3,6 +3,9 @@
 """
 from datetime import datetime, timedelta
 import json
+import hashlib
+import hmac
+import time
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -44,6 +47,45 @@ class AuthService:
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return encoded_jwt
+
+    @staticmethod
+    def verify_telegram_login(payload: dict) -> bool:
+        """
+        Проверка подписи Telegram Login Widget.
+        Ожидается payload с полями id, auth_date, hash и др.
+        """
+        bot_token = settings.TELEGRAM_BOT_TOKEN
+        if not bot_token:
+            return False
+
+        provided_hash = payload.get("hash")
+        if not provided_hash:
+            return False
+
+        auth_date = payload.get("auth_date")
+        try:
+            auth_date = int(auth_date)
+        except Exception:
+            return False
+
+        max_age = settings.TELEGRAM_AUTH_MAX_AGE_SECONDS
+        if max_age and int(time.time()) - auth_date > max_age:
+            return False
+
+        data_check = {
+            key: value
+            for key, value in payload.items()
+            if key != "hash" and value is not None
+        }
+        data_check_string = "\n".join(
+            f"{k}={data_check[k]}" for k in sorted(data_check.keys())
+        )
+        secret_key = hashlib.sha256(bot_token.encode("utf-8")).digest()
+        computed_hash = hmac.new(
+            secret_key, data_check_string.encode("utf-8"), hashlib.sha256
+        ).hexdigest()
+
+        return hmac.compare_digest(computed_hash, str(provided_hash))
     
     @staticmethod
     def decode_token(token: str) -> dict:
