@@ -7,7 +7,7 @@ export function renderLoginForm() {
         <div class="logo">PT</div>
         <div>
           <div style="font-weight:800;">Пропуска автотранспорта</div>
-          <p>Материал-дизайн панель для управления пропусками</p>
+          <p></p>
         </div>
       </div>
       <form id="login-form" class="section">

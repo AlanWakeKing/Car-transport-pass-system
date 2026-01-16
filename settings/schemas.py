@@ -19,11 +19,3 @@ class PropuskTemplateResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
-class DbEnvSettings(BaseModel):
-    POSTGRES_DB: str | None = None
-    POSTGRES_USER: str | None = None
-    POSTGRES_PASSWORD: str | None = None
-    POSTGRES_HOST: str | None = None
-    POSTGRES_PORT: str | None = None
-    DATABASE_URL: str | None = None
