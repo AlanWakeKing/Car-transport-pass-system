@@ -11,11 +11,11 @@ class Settings(BaseSettings):
     """
     
     # База данных
-    DATABASE_URL: str | None = None
+    DATABASE_URL: str = "postgresql+psycopg://postgres:GfhjkmFlvbybcnhfnjhf@10.10.10.7:5432/propusk_system"
     POSTGRES_DB: str = "propusk_system"
     POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PASSWORD: str = "GfhjkmFlvbybcnhfnjhf"
+    POSTGRES_HOST: str = "10.10.10.7"
     POSTGRES_PORT: int = 5432
     
     # JWT токены

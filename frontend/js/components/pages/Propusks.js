@@ -45,6 +45,141 @@ export class PropusksPage {
     this.state.references.models = models;
   }
 
+  async loadHistory(propuskId) {
+    try {
+      return await apiGet(`${ENDPOINTS.propusks}/${propuskId}/history`);
+    } catch (err) {
+      handleError(err);
+      return [];
+    }
+  }
+
+  async ensureHistoryModels() {
+    if (this.state.references?.modelsAll) return;
+    try {
+      const models = await apiGet(ENDPOINTS.references.models);
+      this.state.references = {
+        ...(this.state.references || {}),
+        modelsAll: models
+      };
+    } catch (err) {
+      handleError(err);
+    }
+  }
+
+  parseHistoryPayload(payload) {
+    if (!payload) return {};
+    try {
+      const data = JSON.parse(payload);
+      return data && typeof data === "object" ? data : {};
+    } catch {
+      return {};
+    }
+  }
+
+  formatHistoryAction(action) {
+    const map = {
+      created: "Создан",
+      edited: "Изменён",
+      activated: "Активирован",
+      marked_delete: "На удаление",
+      revoked: "Аннулирован",
+      archived: "Архивирован"
+    };
+    return map[action] || action;
+  }
+
+  formatHistoryStatus(status) {
+    const map = {
+      draft: "Черновик",
+      active: "Активен",
+      pending_delete: "На удаление",
+      revoked: "Аннулирован"
+    };
+    return map[status] || status;
+  }
+
+  resolveHistoryValue(field, value) {
+    if (value === null || value === undefined || value === "") return "—";
+    if (field === "status") return this.formatHistoryStatus(String(value));
+    if (field === "id_org") {
+      const org = (this.state.references?.orgs || []).find((o) => String(o.id_org) === String(value));
+      return org ? org.org_name : `ID ${value}`;
+    }
+    if (field === "id_mark_auto") {
+      const mark = (this.state.references?.marks || []).find((m) => String(m.id_mark) === String(value));
+      return mark ? mark.mark_name : `ID ${value}`;
+    }
+    if (field === "id_model_auto") {
+      const model =
+        (this.state.references?.models || []).find((m) => String(m.id_model) === String(value)) ||
+        (this.state.references?.modelsAll || []).find((m) => String(m.id_model) === String(value));
+      return model ? model.model_name : `ID ${value}`;
+    }
+    if (field === "id_fio") {
+      const driver = (this.state.references?.abonents || []).find((a) => String(a.id_fio) === String(value));
+      if (driver) {
+        return `${driver.surname} ${driver.name}${driver.otchestvo ? " " + driver.otchestvo : ""}`;
+      }
+      return `ID ${value}`;
+    }
+    return String(value);
+  }
+
+  getHistoryChanges(item) {
+    const oldData = this.parseHistoryPayload(item.old_values);
+    const newData = this.parseHistoryPayload(item.new_values);
+    const fields = [
+      ["gos_id", "Госномер"],
+      ["id_mark_auto", "Марка"],
+      ["id_model_auto", "Модель"],
+      ["id_org", "Организация"],
+      ["id_fio", "Водитель"],
+      ["status", "Статус"]
+    ];
+    const changes = [];
+    fields.forEach(([field, label]) => {
+      const oldHas = Object.prototype.hasOwnProperty.call(oldData, field);
+      const newHas = Object.prototype.hasOwnProperty.call(newData, field);
+      if (!oldHas && !newHas) return;
+      const oldValue = oldData[field];
+      const newValue = newData[field];
+      const oldNorm = oldValue === null || oldValue === undefined ? null : String(oldValue);
+      const newNorm = newValue === null || newValue === undefined ? null : String(newValue);
+      if (oldNorm === newNorm) return;
+      changes.push(
+        `${label}: ${this.resolveHistoryValue(field, oldValue)} → ${this.resolveHistoryValue(field, newValue)}`
+      );
+    });
+    return changes;
+  }
+
+  renderHistory(history) {
+    if (!history.length) {
+      return `<div class="empty">История пуста</div>`;
+    }
+    return history.map((item) => {
+      const time = item.timestamp ? new Date(item.timestamp).toLocaleString("ru-RU") : "-";
+      const user = item.user_name || `ID ${item.changed_by}`;
+      const changes = this.getHistoryChanges(item);
+      const changesBlock = changes.length
+        ? `<div class="history-changes">${changes.map((c) => `<div>${c}</div>`).join("")}</div>`
+        : "";
+      const comment = item.comment ? `<div class="history-comment">${item.comment}</div>` : "";
+      return `
+        <div class="propusk-history-item">
+          <div class="history-row">
+            <strong>${this.formatHistoryAction(item.action)}</strong>
+            <span class="history-meta">${time}</span>
+          </div>
+          <div class="history-meta">${user}</div>
+          ${changesBlock}
+          ${comment}
+        </div>
+      `;
+    }).join("");
+  }
+
   async render() {
     const nextStatus = this.context.state.ui?.propuskFilters?.status || "";
     if (nextStatus) {
@@ -335,52 +470,63 @@ export class PropusksPage {
 
   async openEditModal(propusk) {
     if (!propusk) return;
+    await this.ensureHistoryModels();
+    const history = await this.loadHistory(propusk.id_propusk);
     const form = document.createElement("form");
     form.className = "section";
     form.innerHTML = `
-      <div class="form-grid">
-        <div class="md-field" style="grid-column:1/-1;">
-          <label>Госномер</label>
-          <input class="md-input" name="gos_id" value="${propusk.gos_id || ""}" placeholder="A 888 AA 790" maxlength="11" pattern="[A-Za-z]{1}\\s?[0-9]{3}\\s?[A-Za-z]{2}\\s?[0-9]{3}" title="Формат: A 888 AA 790 (только латиница)" required>
+      <div class="history-controls">
+        <button class="md-btn ghost" type="button" id="toggle-history">История</button>
+      </div>
+      <div class="propusk-edit-grid history-collapsed">
+        <div class="propusk-history">
+          <div class="history-title">История редактирования</div>
+          ${this.renderHistory(history)}
         </div>
-        <div class="md-field">
-          <label>Марка</label>
-          <select class="md-select" name="id_mark_auto" required>
-            <option value="">Выберите марку</option>
-            ${this.state.references?.marks?.map((m) => `<option value="${m.id_mark}" ${String(propusk.id_mark_auto) === String(m.id_mark) ? "selected" : ""}>${m.mark_name}</option>`).join("")}
-          </select>
-        </div>
-        <div class="md-field">
-          <label>Модель</label>
-          <select class="md-select" name="id_model_auto" required disabled>
-            <option value="">Сначала выберите марку</option>
-          </select>
-        </div>
-        <div class="md-field">
-          <label>Компания</label>
-          <select class="md-select" name="id_org" required>
-            <option value="">Выберите организацию</option>
-            ${this.state.references?.orgs?.map((o) => `<option value="${o.id_org}" ${String(propusk.id_org) === String(o.id_org) ? "selected" : ""}>${o.org_name}</option>`).join("")}
-          </select>
-        </div>
-        <div class="md-field">
-          <label>Водитель</label>
-          <select class="md-select" name="id_fio" required>
-            <option value="">Выберите водителя</option>
-            ${this.state.references?.abonents?.map((a) => `<option value="${a.id_fio}" ${String(propusk.id_fio) === String(a.id_fio) ? "selected" : ""}>${a.surname} ${a.name}${a.otchestvo ? " " + a.otchestvo : ""}</option>`).join("")}
-          </select>
-        </div>
-        <div class="md-field">
-          <label>Дата выдачи</label>
-          <input type="date" class="md-input" name="release_date" value="${propusk.release_date || ""}" required>
-        </div>
-        <div class="md-field">
-          <label>Действует до</label>
-          <input type="date" class="md-input" name="valid_until" value="${propusk.valid_until || ""}" required>
-        </div>
-        <div class="md-field" style="grid-column:1/-1;">
-          <label>Комментарий</label>
-          <textarea class="md-textarea" name="info" placeholder="Описание условий, номер заявки">${propusk.info || ""}</textarea>
+        <div class="form-grid">
+          <div class="md-field" style="grid-column:1/-1;">
+            <label>Госномер</label>
+            <input class="md-input" name="gos_id" value="${propusk.gos_id || ""}" placeholder="A 888 AA 790" maxlength="11" pattern="[A-Za-z]{1}\\s?[0-9]{3}\\s?[A-Za-z]{2}\\s?[0-9]{3}" title="Формат: A 888 AA 790 (только латиница)" required>
+          </div>
+          <div class="md-field">
+            <label>Марка</label>
+            <select class="md-select" name="id_mark_auto" required>
+              <option value="">Выберите марку</option>
+              ${this.state.references?.marks?.map((m) => `<option value="${m.id_mark}" ${String(propusk.id_mark_auto) === String(m.id_mark) ? "selected" : ""}>${m.mark_name}</option>`).join("")}
+            </select>
+          </div>
+          <div class="md-field">
+            <label>Модель</label>
+            <select class="md-select" name="id_model_auto" required disabled>
+              <option value="">Сначала выберите марку</option>
+            </select>
+          </div>
+          <div class="md-field">
+            <label>Компания</label>
+            <select class="md-select" name="id_org" required>
+              <option value="">Выберите организацию</option>
+              ${this.state.references?.orgs?.map((o) => `<option value="${o.id_org}" ${String(propusk.id_org) === String(o.id_org) ? "selected" : ""}>${o.org_name}</option>`).join("")}
+            </select>
+          </div>
+          <div class="md-field">
+            <label>Водитель</label>
+            <select class="md-select" name="id_fio" required>
+              <option value="">Выберите водителя</option>
+              ${this.state.references?.abonents?.map((a) => `<option value="${a.id_fio}" ${String(propusk.id_fio) === String(a.id_fio) ? "selected" : ""}>${a.surname} ${a.name}${a.otchestvo ? " " + a.otchestvo : ""}</option>`).join("")}
+            </select>
+          </div>
+          <div class="md-field">
+            <label>Дата выдачи</label>
+            <input type="date" class="md-input" name="release_date" value="${propusk.release_date || ""}" required>
+          </div>
+          <div class="md-field">
+            <label>Действует до</label>
+            <input type="date" class="md-input" name="valid_until" value="${propusk.valid_until || ""}" required>
+          </div>
+          <div class="md-field" style="grid-column:1/-1;">
+            <label>Комментарий</label>
+            <textarea class="md-textarea" name="info" placeholder="Описание условий, номер заявки">${propusk.info || ""}</textarea>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -390,6 +536,16 @@ export class PropusksPage {
     `;
 
     const instance = modal.show({ title: `Редактировать пропуск #${propusk.id_propusk}`, content: form });
+    const toggleBtn = form.querySelector("#toggle-history");
+    const editGrid = form.querySelector(".propusk-edit-grid");
+    toggleBtn?.addEventListener("click", () => {
+      editGrid?.classList.toggle("history-collapsed");
+      if (editGrid?.classList.contains("history-collapsed")) {
+        toggleBtn.textContent = "История";
+      } else {
+        toggleBtn.textContent = "Скрыть историю";
+      }
+    });
     const gosInput = form.querySelector('[name="gos_id"]');
     const modelSelect = form.querySelector('[name="id_model_auto"]');
     const orgSelect = form.querySelector('[name="id_org"]');

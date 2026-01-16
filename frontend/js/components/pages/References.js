@@ -56,6 +56,7 @@ export class ReferencesPage {
                   <tr>
                     <th>Название</th>
                     <th>Свободных мест</th>
+                    <th>Комментарий</th>
                     <th>ID</th>
                     <th>Действия</th>
                   </tr>
@@ -195,7 +196,7 @@ export class ReferencesPage {
     if (orgTbody) {
       orgTbody.innerHTML = this.state.orgs.length
         ? this.state.orgs.map((o) => this.orgRow(o)).join("")
-        : `<tr><td colspan="4"><div class="empty">Нет организаций</div></td></tr>`;
+        : `<tr><td colspan="5"><div class="empty">Нет организаций</div></td></tr>`;
     }
 
     if (markTbody) {
@@ -222,6 +223,7 @@ export class ReferencesPage {
       <tr>
         <td>${org.org_name}</td>
         <td>${org.free_mesto ?? 0}</td>
+        <td>${org.comment || "-"}</td>
         <td>${org.id_org}</td>
         <td>
           ${canEditOrganizations(this.context.state.user) ? `
@@ -297,6 +299,10 @@ export class ReferencesPage {
       <div class="md-field">
         <label>Свободных мест</label>
         <input class="md-input" name="free_mesto" type="number" value="${org?.free_mesto ?? 0}">
+      </div>
+      <div class="md-field">
+        <label>Комментарий</label>
+        <textarea class="md-textarea" name="comment" placeholder="Дополнительная информация">${org?.comment || ""}</textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-org">Отмена</button>

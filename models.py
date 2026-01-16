@@ -75,6 +75,7 @@ class Organiz(Base):
     id_org = Column(Integer, primary_key=True, index=True)
     org_name = Column(String(200), nullable=False, unique=True)
     free_mesto = Column(Integer, default=0)  # Гостевые места
+    comment = Column(Text)  # Комментарий
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Связи

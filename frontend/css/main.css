@@ -162,6 +162,75 @@
   gap: 1rem;
 }
 
+.propusk-edit-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(320px, 1.6fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.propusk-edit-grid.history-collapsed {
+  grid-template-columns: 1fr;
+}
+
+.propusk-edit-grid.history-collapsed .propusk-history {
+  display: none;
+}
+
+.history-controls {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.propusk-history {
+  border: 1px solid var(--md-border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #fff;
+  display: grid;
+  gap: 0.6rem;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.history-title {
+  font-weight: 700;
+  color: var(--md-text);
+}
+
+.propusk-history-item {
+  border: 1px dashed var(--md-border);
+  border-radius: 10px;
+  padding: 0.5rem;
+  display: grid;
+  gap: 0.35rem;
+  background: #f8fafc;
+}
+
+.history-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.history-meta {
+  color: var(--md-text-muted);
+  font-size: 0.8rem;
+}
+
+.history-comment {
+  font-size: 0.85rem;
+  color: var(--md-text);
+}
+
+.history-changes {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--md-text);
+}
+
 .list {
   display: grid;
   gap: 0.75rem;
@@ -372,7 +441,9 @@
   background: #fff;
   border-radius: var(--md-radius);
   padding: 1.5rem;
-  width: min(640px, 100%);
+  width: min(900px, 100%);
+  max-height: 91vh;
+  overflow: auto;
   box-shadow: var(--md-shadow);
   border: 1px solid var(--md-border);
   display: grid;
@@ -434,5 +505,8 @@
   .sidebar {
     position: static;
     height: auto;
+  }
+  .propusk-edit-grid {
+    grid-template-columns: 1fr;
   }
 }
