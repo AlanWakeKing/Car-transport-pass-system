@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     TELEGRAM_AUTH_MAX_AGE_SECONDS: int = 60 * 60 * 24  # 24 hours
 
     # CORS
-    CORS_ALLOW_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000"
+    CORS_ALLOW_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000,https://parking.kinoteka.space/"
 
     # Cookies
     COOKIE_SECURE: bool = False
