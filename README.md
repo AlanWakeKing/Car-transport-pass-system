@@ -57,6 +57,9 @@ py -3.12 -m venv venv312
 # 3) Переменные окружения (при необходимости)
 $env:DATABASE_URL="postgresql+psycopg://user:pass@localhost:5432/propusk_system"
 $env:SECRET_KEY="your_secret_key"
+$env:CORS_ALLOW_ORIGINS="http://localhost:8000,http://127.0.0.1:8000"
+$env:COOKIE_SECURE="False"
+$env:COOKIE_SAMESITE="lax"
 
 # 4) Подготовить БД
 .\venv312\Scripts\python.exe init_db.py
@@ -83,6 +86,9 @@ python3.12 -m venv venv312
 # 3) Переменные окружения (при необходимости)
 export DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/propusk_system
 export SECRET_KEY=your_secret_key
+export CORS_ALLOW_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+export COOKIE_SECURE=False
+export COOKIE_SAMESITE=lax
 
 # 4) Подготовить БД
 ./venv312/bin/python init_db.py
@@ -107,6 +113,9 @@ export SECRET_KEY=your_secret_key
 Переменные читаются через Pydantic Settings (config.py):
 - DATABASE_URL - строка подключения PostgreSQL.
 - SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES - JWT.
+- TELEGRAM_BOT_TOKEN, TELEGRAM_AUTH_MAX_AGE_SECONDS - Telegram Login.
+- CORS_ALLOW_ORIGINS - список разрешённых origin через запятую.
+- COOKIE_SECURE, COOKIE_SAMESITE - параметры httpOnly cookie.
 - APP_NAME, APP_VERSION, DEBUG.
 
 По умолчанию значения прописаны в config.py; для продакшена вынесите их в .env.
@@ -139,6 +148,9 @@ docker build -t propusk-system:latest .
 docker run --rm -p 8000:8000 \
   -e DATABASE_URL=postgresql+psycopg://user:pass@host:5432/propusk_system \
   -e SECRET_KEY=your_secret_key \
+  -e CORS_ALLOW_ORIGINS=http://localhost:8000,http://127.0.0.1:8000 \
+  -e COOKIE_SECURE=False \
+  -e COOKIE_SAMESITE=lax \
   propusk-system:latest
 ```
 
@@ -175,6 +187,9 @@ docker compose run --rm app python create_admin.py
 ```
 DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/propusk_system
 SECRET_KEY=your_secret_key
+CORS_ALLOW_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+COOKIE_SECURE=False
+COOKIE_SAMESITE=lax
 ```
 Альтернатива через `POSTGRES_*`:
 ```
@@ -184,6 +199,8 @@ POSTGRES_PASSWORD=postgres
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
 SECRET_KEY=your_secret_key
+COOKIE_SECURE=False
+COOKIE_SAMESITE=lax
 ```
 Дополнительно можно задать:
 ```
@@ -191,10 +208,12 @@ APP_NAME=Пропуска
 APP_VERSION=1.0.0
 DEBUG=True
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_AUTH_MAX_AGE_SECONDS=86400
 ```
 
 ### 5) Полный чек‑лист запуска проекта (Docker)
-1. Скопируйте/обновите `.env` (DATABASE_URL, SECRET_KEY).
+1. Скопируйте/обновите `.env` (DATABASE_URL, SECRET_KEY, CORS_ALLOW_ORIGINS, COOKIE_*).
 2. Соберите образ: `docker build -t propusk-system:latest .`
 3. Запустите сервисы: `docker compose up -d`
 4. Инициализируйте БД (init_db/seed) командами выше.
