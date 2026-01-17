@@ -7,21 +7,44 @@ import { modal } from "../common/Modal.js";
 export class ReferencesPage {
   constructor(context) {
     this.context = context;
-    this.state = { orgs: [], marks: [], models: [], abonents: [] };
+    this.state = {
+      orgs: [],
+      marks: [],
+      models: [],
+      abonents: [],
+      driversPagination: { page: 1, limit: 50, total: 0 }
+    };
     this.host = null;
   }
 
   async load() {
     try {
-      const [orgs, marks, models, abonents] = await Promise.all([
+      const [orgs, marks, models] = await Promise.all([
         apiGet(ENDPOINTS.references.organizations),
         apiGet(ENDPOINTS.references.marks),
-        apiGet(ENDPOINTS.references.models),
-        apiGet(ENDPOINTS.references.abonents)
+        apiGet(ENDPOINTS.references.models)
       ]);
-      this.state = { orgs, marks, models, abonents };
+      this.state.orgs = orgs;
+      this.state.marks = marks;
+      this.state.models = models;
+      await this.loadDriversPage();
     } catch (err) {
       handleError(err);
+    }
+  }
+
+  async loadDriversPage() {
+    const { page, limit } = this.state.driversPagination;
+    const skip = (page - 1) * limit;
+    const response = await apiGet(ENDPOINTS.references.abonentsPaged, { skip, limit });
+    this.state.abonents = response.items || [];
+    this.state.driversPagination.total = response.total || 0;
+    if (!this.state.abonents.length && this.state.driversPagination.total && page > 1) {
+      const lastPage = Math.max(1, Math.ceil(this.state.driversPagination.total / limit));
+      if (lastPage !== page) {
+        this.state.driversPagination.page = lastPage;
+        await this.loadDriversPage();
+      }
     }
   }
 
@@ -120,12 +143,23 @@ export class ReferencesPage {
                 <tbody id="driver-tbody"></tbody>
               </table>
             </div>
+            <div class="pagination" id="driver-pagination">
+              <button class="md-btn ghost" data-page="prev">Назад</button>
+              <div class="pagination-info" id="driver-page-info"></div>
+              <button class="md-btn ghost" data-page="next">Вперёд</button>
+              <select class="md-select" id="driver-limit">
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
     `;
 
     this.renderTables();
+    this.renderDriverPagination();
 
     const tabs = node.querySelector("#ref-tabs");
     tabs?.addEventListener("click", (e) => {
@@ -183,7 +217,52 @@ export class ReferencesPage {
       });
     }
 
+    node.querySelector("#driver-pagination")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-page]");
+      if (!btn) return;
+      const totalPages = this.getDriverTotalPages();
+      if (btn.dataset.page === "prev" && this.state.driversPagination.page > 1) {
+        this.state.driversPagination.page -= 1;
+      }
+      if (btn.dataset.page === "next" && this.state.driversPagination.page < totalPages) {
+        this.state.driversPagination.page += 1;
+      }
+      await this.loadDriversPage();
+      this.renderTables();
+    });
+
+    node.querySelector("#driver-limit")?.addEventListener("change", async (e) => {
+      const value = Number(e.target.value);
+      if (!Number.isFinite(value) || value <= 0) return;
+      this.state.driversPagination.limit = value;
+      this.state.driversPagination.page = 1;
+      await this.loadDriversPage();
+      this.renderTables();
+    });
+
     return node;
+  }
+
+  getDriverTotalPages() {
+    const { limit, total } = this.state.driversPagination;
+    if (!total) return 1;
+    return Math.max(1, Math.ceil(total / limit));
+  }
+
+  renderDriverPagination() {
+    if (!this.host) return;
+    const info = this.host.querySelector("#driver-page-info");
+    const prevBtn = this.host.querySelector("#driver-pagination [data-page='prev']");
+    const nextBtn = this.host.querySelector("#driver-pagination [data-page='next']");
+    const limitSelect = this.host.querySelector("#driver-limit");
+    const { page, limit, total } = this.state.driversPagination;
+    const totalPages = this.getDriverTotalPages();
+    if (info) {
+      info.textContent = `Страница ${Math.min(page, totalPages)} из ${totalPages} • Всего: ${total}`;
+    }
+    if (prevBtn) prevBtn.disabled = page <= 1;
+    if (nextBtn) nextBtn.disabled = page >= totalPages || total === 0;
+    if (limitSelect) limitSelect.value = String(limit);
   }
 
   renderTables() {
@@ -216,6 +295,8 @@ export class ReferencesPage {
         ? this.state.abonents.map((a) => this.driverRow(a)).join("")
         : `<tr><td colspan="4"><div class="empty">Нет водителей</div></td></tr>`;
     }
+
+    this.renderDriverPagination();
   }
 
   orgRow(org) {

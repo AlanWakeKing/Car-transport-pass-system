@@ -2,7 +2,7 @@
 Сервис для работы с пропусками
 """
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from fastapi import HTTPException, status
 from typing import Optional, List
 from datetime import date
@@ -407,6 +407,73 @@ class PropuskService:
             )
         
         return query.order_by(Propusk.created_at.desc()).offset(skip).limit(limit).all()
+
+    @staticmethod
+    def count_propusks(
+        db: Session,
+        status: Optional[object] = None,
+        id_org: Optional[int] = None,
+        gos_id: Optional[str] = None,
+        id_fio: Optional[int] = None,
+        created_by: Optional[int] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+        search: Optional[str] = None
+    ) -> int:
+        query = db.query(func.count(Propusk.id_propusk))
+
+        if status:
+            if isinstance(status, (list, tuple, set)):
+                query = query.filter(Propusk.status.in_(list(status)))
+            else:
+                query = query.filter(Propusk.status == status)
+
+        if id_org:
+            query = query.filter(Propusk.id_org == id_org)
+
+        if gos_id:
+            query = query.filter(Propusk.gos_id.ilike(f"%{gos_id}%"))
+
+        if id_fio:
+            query = query.filter(Propusk.id_fio == id_fio)
+
+        if created_by:
+            query = query.filter(Propusk.created_by == created_by)
+
+        if date_from:
+            query = query.filter(Propusk.release_date >= date_from)
+
+        if date_to:
+            query = query.filter(Propusk.valid_until <= date_to)
+
+        if search:
+            query = query.join(Abonent).join(Organiz).filter(
+                or_(
+                    Propusk.gos_id.ilike(f"%{search}%"),
+                    Organiz.org_name.ilike(f"%{search}%"),
+                    Abonent.surname.ilike(f"%{search}%"),
+                    Abonent.name.ilike(f"%{search}%"),
+                    Abonent.otchestvo.ilike(f"%{search}%")
+                )
+            )
+
+        total = query.scalar()
+        return int(total or 0)
+
+    @staticmethod
+    def count_by_status(
+        db: Session,
+        allowed_statuses: Optional[list] = None
+    ) -> dict:
+        query = db.query(Propusk.status, func.count(Propusk.id_propusk))
+        if allowed_statuses:
+            query = query.filter(Propusk.status.in_(allowed_statuses))
+        rows = query.group_by(Propusk.status).all()
+        counts = {}
+        for status, count in rows:
+            key = status.value if hasattr(status, "value") else str(status)
+            counts[key] = int(count)
+        return counts
     
     @staticmethod
     def get_propusk_history(db: Session, propusk_id: int) -> List[PropuskHistory]:

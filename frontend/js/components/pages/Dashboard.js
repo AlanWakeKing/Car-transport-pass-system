@@ -14,11 +14,16 @@ export class DashboardPage {
       return { propusks: [], active: 0, draft: 0, revoked: 0 };
     }
     try {
-      const propusks = await apiGet(ENDPOINTS.propusks, { limit: 6 });
-      const active = propusks.filter((p) => p.status === "active").length;
-      const draft = propusks.filter((p) => p.status === "draft").length;
-      const revoked = propusks.filter((p) => p.status === "revoked").length;
-      return { propusks, active, draft, revoked };
+      const [propusks, stats] = await Promise.all([
+        apiGet(ENDPOINTS.propusks, { limit: 6 }),
+        apiGet(ENDPOINTS.propusksStats)
+      ]);
+      return {
+        propusks,
+        active: stats.active || 0,
+        draft: stats.draft || 0,
+        revoked: stats.revoked || 0
+      };
     } catch (err) {
       handleError(err);
       return { propusks: [], active: 0, draft: 0, revoked: 0 };

@@ -43,6 +43,30 @@ def rate_limit(request: Request, limit: int = 10, window_seconds: int = 60):
         bucket.append(now)
 
 
+def send_telegram_welcome_message(user: User) -> None:
+    bot_token = settings.TELEGRAM_BOT_TOKEN
+    if not bot_token or not user.tg_user_id:
+        return
+    text = settings.TELEGRAM_WELCOME_MESSAGE or "Авторизация выполнена."
+    payload = {
+        "chat_id": user.tg_user_id,
+        "text": text,
+    }
+    data = json.dumps(payload).encode("utf-8")
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    req = urllib_request.Request(
+        url,
+        data=data,
+        headers={"content-type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib_request.urlopen(req, timeout=5):
+            return
+    except urllib_error.URLError as exc:
+        print(f"Telegram sendMessage error: {exc}")
+
+
 def send_n8n_welcome_webhook(user: User) -> None:
     webhook_url = settings.N8N_TG_WELCOME_WEBHOOK_URL
     if not webhook_url:
@@ -212,6 +236,7 @@ def link_telegram(
     current_user.tg_user_id = payload.tg_user_id
     db.commit()
     db.refresh(current_user)
+    send_telegram_welcome_message(current_user)
     send_n8n_welcome_webhook(current_user)
     return current_user
 

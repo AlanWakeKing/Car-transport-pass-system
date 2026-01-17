@@ -9,18 +9,33 @@ import { modal } from "../common/Modal.js";
 export class PropusksPage {
   constructor(context) {
     this.context = context;
-    this.state = { propusks: [], filters: { search: "" }, references: null };
+    this.state = {
+      propusks: [],
+      filters: { search: "" },
+      references: null,
+      pagination: { page: 1, limit: 50, total: 0 }
+    };
     this.searchTimer = null;
   }
 
   async loadData() {
     const { filters } = this.state;
     try {
-      const params = { limit: 50 };
+      const { page, limit } = this.state.pagination;
+      const skip = (page - 1) * limit;
+      const params = { limit, skip };
       if (filters.search) params.search = filters.search;
       if (filters.status) params.status = filters.status;
-      const propusks = await apiGet(ENDPOINTS.propusks, params);
-      this.state.propusks = propusks;
+      const response = await apiGet(ENDPOINTS.propusksPaged, params);
+      this.state.propusks = response.items || [];
+      this.state.pagination.total = response.total || 0;
+      if (!this.state.propusks.length && this.state.pagination.total && page > 1) {
+        const lastPage = Math.max(1, Math.ceil(this.state.pagination.total / limit));
+        if (lastPage !== page) {
+          this.state.pagination.page = lastPage;
+          await this.loadData();
+        }
+      }
     } catch (err) {
       handleError(err);
     }
@@ -232,16 +247,48 @@ export class PropusksPage {
             <tbody id="propusk-rows"></tbody>
           </table>
         </div>
+        <div class="pagination" id="propusk-pagination">
+          <button class="md-btn ghost" data-page="prev">Назад</button>
+          <div class="pagination-info" id="propusk-page-info"></div>
+          <button class="md-btn ghost" data-page="next">Вперёд</button>
+          <select class="md-select" id="propusk-limit">
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
       </div>
     `;
 
     this.renderRows(node.querySelector("#propusk-rows"));
+    this.renderPagination(node);
     this.bind(node);
     const statusSelect = node.querySelector("#filter-status");
     if (statusSelect) {
       statusSelect.value = this.state.filters.status || "";
     }
     return node;
+  }
+
+  getTotalPages() {
+    const { limit, total } = this.state.pagination;
+    if (!total) return 1;
+    return Math.max(1, Math.ceil(total / limit));
+  }
+
+  renderPagination(node) {
+    const info = node.querySelector("#propusk-page-info");
+    const prevBtn = node.querySelector("[data-page='prev']");
+    const nextBtn = node.querySelector("[data-page='next']");
+    const limitSelect = node.querySelector("#propusk-limit");
+    const { page, limit, total } = this.state.pagination;
+    const totalPages = this.getTotalPages();
+    if (info) {
+      info.textContent = `Страница ${Math.min(page, totalPages)} из ${totalPages} • Всего: ${total}`;
+    }
+    if (prevBtn) prevBtn.disabled = page <= 1;
+    if (nextBtn) nextBtn.disabled = page >= totalPages || total === 0;
+    if (limitSelect) limitSelect.value = String(limit);
   }
 
   renderRows(tbody) {
@@ -281,8 +328,10 @@ export class PropusksPage {
       const search = node.querySelector("#filter-search").value;
       const status = node.querySelector("#filter-status").value;
       this.state.filters = { search, status };
+      this.state.pagination.page = 1;
       await this.loadData();
       this.renderRows(node.querySelector("#propusk-rows"));
+      this.renderPagination(node);
     };
 
     node.querySelector("#apply-filters")?.addEventListener("click", async () => {
@@ -333,6 +382,7 @@ export class PropusksPage {
         }
         await this.loadData();
         this.renderRows(node.querySelector("#propusk-rows"));
+        this.renderPagination(node);
       } catch (err) {
         handleError(err);
       }
@@ -340,6 +390,31 @@ export class PropusksPage {
 
     node.querySelector("#new-propusk")?.addEventListener("click", () => {
       this.openCreateModal();
+    });
+
+    node.querySelector("#propusk-pagination")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-page]");
+      if (!btn) return;
+      const totalPages = this.getTotalPages();
+      if (btn.dataset.page === "prev" && this.state.pagination.page > 1) {
+        this.state.pagination.page -= 1;
+      }
+      if (btn.dataset.page === "next" && this.state.pagination.page < totalPages) {
+        this.state.pagination.page += 1;
+      }
+      await this.loadData();
+      this.renderRows(node.querySelector("#propusk-rows"));
+      this.renderPagination(node);
+    });
+
+    node.querySelector("#propusk-limit")?.addEventListener("change", async (e) => {
+      const value = Number(e.target.value);
+      if (!Number.isFinite(value) || value <= 0) return;
+      this.state.pagination.limit = value;
+      this.state.pagination.page = 1;
+      await this.loadData();
+      this.renderRows(node.querySelector("#propusk-rows"));
+      this.renderPagination(node);
     });
   }
 
@@ -525,6 +600,7 @@ export class PropusksPage {
         instance.close();
         await this.loadData();
         this.renderRows(document.querySelector("#propusk-rows"));
+        this.renderPagination(document);
       } catch (err) {
         handleError(err);
       }
@@ -667,6 +743,7 @@ export class PropusksPage {
         instance.close();
         await this.loadData();
         this.renderRows(document.querySelector("#propusk-rows"));
+        this.renderPagination(document);
       } catch (err) {
         handleError(err);
       }
@@ -692,6 +769,7 @@ export class PropusksPage {
         instance.close();
         await this.loadData();
         this.renderRows(document.querySelector("#propusk-rows"));
+        this.renderPagination(document);
       } catch (err) {
         handleError(err);
       }

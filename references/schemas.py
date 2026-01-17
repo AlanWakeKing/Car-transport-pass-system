@@ -1,12 +1,12 @@
-"""
-Pydantic схемы для справочников
+﻿"""
+Pydantic СЃС…РµРјС‹ РґР»СЏ СЃРїСЂР°РІРѕС‡РЅРёРєРѕРІ
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
 
-# ============= ОРГАНИЗАЦИИ =============
+# ============= РћР Р“РђРќРР—РђР¦РР =============
 
 class OrganizBase(BaseModel):
     org_name: str = Field(..., min_length=2, max_length=200)
@@ -32,7 +32,7 @@ class OrganizResponse(OrganizBase):
         from_attributes = True
 
 
-# ============= МАРКИ АВТОМОБИЛЕЙ =============
+# ============= РњРђР РљР РђР’РўРћРњРћР‘РР›Р•Р™ =============
 
 class MarkAutoBase(BaseModel):
     mark_name: str = Field(..., min_length=1, max_length=100)
@@ -53,7 +53,7 @@ class MarkAutoResponse(MarkAutoBase):
         from_attributes = True
 
 
-# ============= МОДЕЛИ АВТОМОБИЛЕЙ =============
+# ============= РњРћР”Р•Р›Р РђР’РўРћРњРћР‘РР›Р•Р™ =============
 
 class ModelAutoBase(BaseModel):
     id_mark: int
@@ -71,13 +71,13 @@ class ModelAutoUpdate(BaseModel):
 
 class ModelAutoResponse(ModelAutoBase):
     id_model: int
-    mark_name: Optional[str] = None  # Для удобства будем возвращать и название марки
+    mark_name: Optional[str] = None  # Р”Р»СЏ СѓРґРѕР±СЃС‚РІР° Р±СѓРґРµРј РІРѕР·РІСЂР°С‰Р°С‚СЊ Рё РЅР°Р·РІР°РЅРёРµ РјР°СЂРєРё
     
     class Config:
         from_attributes = True
 
 
-# ============= АБОНЕНТЫ (ВЛАДЕЛЬЦЫ) =============
+# ============= РђР‘РћРќР•РќРўР« (Р’Р›РђР”Р•Р›Р¬Р¦Р«) =============
 
 class AbonentBase(BaseModel):
     surname: str = Field(..., min_length=1, max_length=100)
@@ -99,11 +99,24 @@ class AbonentUpdate(BaseModel):
     info: Optional[str] = Field(None, max_length=500)
 
 
-class AbonentResponse(AbonentBase):
+class AbonentResponse(BaseModel):
     id_fio: int
-    full_name: str  # Полное ФИО
-    org_name: Optional[str] = None  # Название организации
+    surname: str = Field(..., max_length=100)
+    name: str = Field(..., max_length=100)
+    otchestvo: Optional[str] = Field(None, max_length=100)
+    id_org: int
+    info: Optional[str] = Field(None, max_length=500)
+    full_name: str
+    org_name: Optional[str] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
+
+
+class AbonentListResponse(BaseModel):
+    items: List[AbonentResponse]
+    total: int
+    skip: int
+    limit: int
+

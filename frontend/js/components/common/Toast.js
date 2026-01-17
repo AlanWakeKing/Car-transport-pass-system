@@ -8,7 +8,10 @@ class ToastService {
     }
   }
 
-  show(message, type = "info", duration = 3200) {
+  show(message, type = "info", duration) {
+    const effectiveDuration = typeof duration === "number"
+      ? duration
+      : (type === "error" ? 10000 : 3200);
     const node = document.createElement("div");
     node.className = `toast ${type} animate-fade`;
     node.innerHTML = `
@@ -16,7 +19,7 @@ class ToastService {
       <span>${message}</span>
     `;
     this.container.appendChild(node);
-    setTimeout(() => node.remove(), duration);
+    setTimeout(() => node.remove(), effectiveDuration);
   }
 }
 

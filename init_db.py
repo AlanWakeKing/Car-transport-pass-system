@@ -1,6 +1,7 @@
 ﻿"""
 Скрипт для создания всех таблиц и проверки подключения к БД
 """
+from sqlalchemy import text
 from database import Base, engine, check_connection
 from models import (
     User, Organiz, Abonent, MarkAuto, ModelAuto, 
@@ -16,6 +17,15 @@ def create_tables():
     try:
         # Создаём все таблицы
         Base.metadata.create_all(bind=engine)
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS tg_sessions (
+                    tg_user_id BIGINT PRIMARY KEY,
+                    state VARCHAR(100),
+                    payload TEXT,
+                    updated_at TIMESTAMPTZ DEFAULT now()
+                )
+            """))
         print("✅ Все таблицы успешно созданы!")
         return True
     except Exception as e:
@@ -30,6 +40,8 @@ def drop_tables():
     """
     print("⚠️  ВНИМАНИЕ! Удаляю все таблицы...")
     try:
+        with engine.begin() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS tg_sessions"))
         Base.metadata.drop_all(bind=engine)
         print("✅ Все таблицы удалены!")
         return True
@@ -53,6 +65,7 @@ def show_tables_info():
         ("propusk", "Пропуска (активные)"),
         ("propusk_archive", "Архив отозванных пропусков"),
         ("propusk_history", "История изменений пропусков"),
+        ("tg_sessions", "Telegram сессии"),
                 ("propusk_template",
         ("report_template", "??????? PDF ???????"),
          "??????? PDF-?????????"),

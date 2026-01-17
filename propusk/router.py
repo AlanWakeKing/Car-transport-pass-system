@@ -10,8 +10,8 @@ from datetime import date
 from database import get_db
 from models import User, PropuskStatus, Organiz
 from propusk.schemas import (
-    PropuskCreate, PropuskUpdate, PropuskResponse, 
-    PropuskStatusChange, PropuskHistoryResponse
+    PropuskCreate, PropuskUpdate, PropuskResponse,
+    PropuskStatusChange, PropuskHistoryResponse, PropuskListResponse, PropuskStatsResponse
 )
 
 from urllib.parse import quote
@@ -116,6 +116,76 @@ def get_propusks(
     # Обогащаем данными
     result = [_enrich_propusk(db, p) for p in propusks]
     return result
+
+
+@router.get("/stats", response_model=PropuskStatsResponse)
+def get_propusk_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_view)
+):
+    allowed_statuses = _get_allowed_statuses(current_user)
+    counts = PropuskService.count_by_status(db, allowed_statuses=allowed_statuses)
+    active = counts.get(PropuskStatus.ACTIVE.value, 0)
+    draft = counts.get(PropuskStatus.DRAFT.value, 0)
+    revoked = counts.get(PropuskStatus.REVOKED.value, 0)
+    pending_delete = counts.get(PropuskStatus.PENDING_DELETE.value, 0)
+    total = active + draft + revoked + pending_delete
+    return {
+        "active": active,
+        "draft": draft,
+        "revoked": revoked,
+        "pending_delete": pending_delete,
+        "total": total
+    }
+
+
+@router.get("/paged", response_model=PropuskListResponse)
+def get_propusks_paged(
+    status: Optional[PropuskStatus] = Query(None, description="Фильтр по статусу"),
+    id_org: Optional[int] = Query(None, description="Фильтр по организации"),
+    gos_id: Optional[str] = Query(None, description="Поиск по гос. номеру"),
+    id_fio: Optional[int] = Query(None, description="Фильтр по владельцу"),
+    created_by: Optional[int] = Query(None, description="Фильтр по создателю"),
+    date_from: Optional[date] = Query(None, description="Дата выпуска от"),
+    date_to: Optional[date] = Query(None, description="Дата действия до"),
+    search: Optional[str] = Query(None, description="Поиск по номеру или ФИО"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_view)
+):
+    allowed_statuses = _get_allowed_statuses(current_user)
+    if allowed_statuses:
+        if status and status not in allowed_statuses:
+            return {"items": [], "total": 0, "skip": skip, "limit": limit}
+        status = status or allowed_statuses
+
+    total = PropuskService.count_propusks(
+        db=db,
+        status=status,
+        id_org=id_org,
+        gos_id=gos_id,
+        id_fio=id_fio,
+        created_by=created_by,
+        date_from=date_from,
+        date_to=date_to,
+        search=search
+    )
+    propusks = PropuskService.get_propusks(
+        db=db,
+        status=status,
+        id_org=id_org,
+        gos_id=gos_id,
+        id_fio=id_fio,
+        created_by=created_by,
+        date_from=date_from,
+        date_to=date_to,
+        search=search,
+        skip=skip,
+        limit=limit
+    )
+    items = [_enrich_propusk(db, p) for p in propusks]
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
 @router.get("/{propusk_id}", response_model=PropuskResponse)

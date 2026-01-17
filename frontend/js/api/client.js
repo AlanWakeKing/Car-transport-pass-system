@@ -1,4 +1,4 @@
-import { API_BASE } from "../config/constants.js";
+﻿import { API_BASE } from "../config/constants.js";
 import { toast } from "../components/common/Toast.js";
 
 let authToken = null;
@@ -28,12 +28,15 @@ async function request(path, options = {}) {
   }
 
   if (!resp.ok) {
-    let detail = "Ошибка запроса";
-    try {
-      const data = await resp.json();
-      detail = data.detail || JSON.stringify(data);
-    } catch {
-      detail = await resp.text();
+    let detail = "Неизвестная ошибка";
+    const raw = await resp.text();
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        detail = data.detail || JSON.stringify(data);
+      } catch {
+        detail = raw;
+      }
     }
     throw new Error(detail);
   }
@@ -74,7 +77,7 @@ export async function downloadFile(path, filename = "file") {
   const resp = await fetch(`${API_BASE}${path}`, { headers, credentials: "include" });
   if (!resp.ok) {
     let detail = await resp.text();
-    throw new Error(detail || "Не удалось скачать файл");
+    throw new Error(detail || "Не удалось открыть файл");
   }
   const blob = await resp.blob();
   const url = URL.createObjectURL(blob);
@@ -93,12 +96,12 @@ export async function openFileInNewTab(path) {
   const resp = await fetch(`${API_BASE}${path}`, { headers, credentials: "include" });
   if (!resp.ok) {
     let detail = await resp.text();
-    throw new Error(detail || "Не удалось открыть файл");
+    throw new Error(detail || "Не удалось скачать файл");
   }
   const blob = await resp.blob();
   const url = URL.createObjectURL(blob);
   window.open(url, "_blank", "noopener");
-  // не revoke сразу, дадим браузеру открыть
+  // РЅРµ revoke СЃСЂР°Р·Сѓ, РґР°РґРёРј Р±СЂР°СѓР·РµСЂСѓ РѕС‚РєСЂС‹С‚СЊ
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
@@ -146,3 +149,5 @@ export async function openPostInNewTab(path, body) {
   window.open(url, "_blank", "noopener");
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
+
+

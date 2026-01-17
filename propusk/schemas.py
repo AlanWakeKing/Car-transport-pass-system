@@ -2,7 +2,7 @@
 Pydantic схемы для пропусков
 """
 from pydantic import BaseModel, Field, validator
-from typing import Optional
+from typing import Optional, List
 from datetime import date, datetime
 from models import PropuskStatus, HistoryAction
 
@@ -59,6 +59,21 @@ class PropuskResponse(PropuskBase):
     
     class Config:
         from_attributes = True
+
+
+class PropuskListResponse(BaseModel):
+    items: List[PropuskResponse]
+    total: int
+    skip: int
+    limit: int
+
+
+class PropuskStatsResponse(BaseModel):
+    active: int
+    draft: int
+    revoked: int
+    pending_delete: int
+    total: int
 
 
 # ============= ИСТОРИЯ ИЗМЕНЕНИЙ =============

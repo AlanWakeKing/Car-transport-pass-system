@@ -17,7 +17,10 @@ export const ENDPOINTS = {
     organizations: "/api/references/organizations",
     marks: "/api/references/marks",
     models: "/api/references/models",
-    abonents: "/api/references/abonents"
+    abonents: "/api/references/abonents",
+    abonentsPaged: "/api/references/abonents/paged"
   },
-  propusks: "/api/propusk"
+  propusks: "/api/propusk",
+  propusksStats: "/api/propusk/stats",
+  propusksPaged: "/api/propusk/paged"
 };

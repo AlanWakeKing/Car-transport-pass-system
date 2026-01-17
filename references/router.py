@@ -3,6 +3,7 @@ API endpoints для справочников
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 
 from database import get_db
@@ -11,7 +12,7 @@ from references.schemas import (
     OrganizCreate, OrganizUpdate, OrganizResponse,
     MarkAutoCreate, MarkAutoUpdate, MarkAutoResponse,
     ModelAutoCreate, ModelAutoUpdate, ModelAutoResponse,
-    AbonentCreate, AbonentUpdate, AbonentResponse
+    AbonentCreate, AbonentUpdate, AbonentResponse, AbonentListResponse
 )
 from auth.dependencies import require_auth, require_admin, require_edit_organization
 
@@ -330,6 +331,38 @@ def get_abonents(
             abonent.org_name = abonent.organization.org_name
     
     return abonents
+
+
+@router.get("/abonents/paged", response_model=AbonentListResponse)
+def get_abonents_paged(
+    org_id: Optional[int] = Query(None, description="Фильтр по организации"),
+    search: Optional[str] = Query(None, description="Поиск по ФИО"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
+):
+    query = db.query(Abonent)
+
+    if org_id:
+        query = query.filter(Abonent.id_org == org_id)
+
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            (Abonent.surname.ilike(search_filter)) |
+            (Abonent.name.ilike(search_filter)) |
+            (Abonent.otchestvo.ilike(search_filter))
+        )
+
+    total = query.with_entities(func.count(Abonent.id_fio)).scalar()
+    abonents = query.order_by(Abonent.surname, Abonent.name).offset(skip).limit(limit).all()
+
+    for abonent in abonents:
+        if abonent.organization:
+            abonent.org_name = abonent.organization.org_name
+
+    return {"items": abonents, "total": int(total or 0), "skip": skip, "limit": limit}
 
 
 @router.post("/abonents", response_model=AbonentResponse, status_code=status.HTTP_201_CREATED)
