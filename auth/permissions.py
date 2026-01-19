@@ -15,6 +15,9 @@ PERMISSION_KEYS = [
     "menu_reports",
     "menu_users",
     "menu_settings",
+    "menu_create_pass",
+    "menu_edit_pass",
+    "menu_history",
 ]
 
 
@@ -52,6 +55,9 @@ ROLE_DEFAULTS = {
         "menu_reports": True,
         "menu_users": False,
         "menu_settings": False,
+        "menu_create_pass": False,
+        "menu_edit_pass": False,
+        "menu_history": False,
     },
     "guard": {
         "view": True,
@@ -70,6 +76,9 @@ ROLE_DEFAULTS = {
         "menu_reports": False,
         "menu_users": False,
         "menu_settings": False,
+        "menu_create_pass": False,
+        "menu_edit_pass": False,
+        "menu_history": False,
     },
     "viewer": {
         "view": True,
@@ -88,6 +97,9 @@ ROLE_DEFAULTS = {
         "menu_reports": False,
         "menu_users": False,
         "menu_settings": False,
+        "menu_create_pass": False,
+        "menu_edit_pass": False,
+        "menu_history": False,
     },
 }
 

@@ -2,7 +2,16 @@
 import { apiGet, apiPost, apiPatch, apiDelete, handleError, openFileInNewTab } from "../../api/client.js";
 import { renderStatusChip } from "../../utils/statusConfig.js";
 import { toast } from "../common/Toast.js";
-import { canViewPropusks, canCreatePropusks, canEditPropusks, canActivatePropusks, canDeletePropusks, canAnnulPropusks, canMarkDelete, canDownload } from "../../utils/permissions.js";
+import {
+  canViewPropusks,
+  canCreatePropusks,
+  canEditPropusks,
+  canActivatePropusks,
+  canDeletePropusks,
+  canAnnulPropusks,
+  canMarkDelete,
+  canDownload
+} from "../../utils/permissions.js";
 import { requireDateOrder, requireValue, formatGosNumber, requireGosNumber } from "../../utils/validators.js";
 import { modal } from "../common/Modal.js";
 
@@ -504,7 +513,7 @@ export class PropusksPage {
       <div class="form-grid">
         <div class="md-field" style="grid-column:1/-1;">
           <label>Госномер</label>
-          <input class="md-input" name="gos_id" placeholder="A 888 AA 790" maxlength="11" pattern="[A-Za-z]{1}\\s?[0-9]{3}\\s?[A-Za-z]{2}\\s?[0-9]{3}" title="Формат: A 888 AA 790 (только латиница)" required>
+          <input class="md-input" name="gos_id" placeholder="A 888 AA 790 / O 632 CX 77 / 0013 AX 77" maxlength="12" required>
         </div>
         <div class="md-field">
           <label>Марка</label>
@@ -625,7 +634,7 @@ export class PropusksPage {
         <div class="form-grid">
           <div class="md-field" style="grid-column:1/-1;">
             <label>Госномер</label>
-            <input class="md-input" name="gos_id" value="${propusk.gos_id || ""}" placeholder="A 888 AA 790" maxlength="11" pattern="[A-Za-z]{1}\\s?[0-9]{3}\\s?[A-Za-z]{2}\\s?[0-9]{3}" title="Формат: A 888 AA 790 (только латиница)" required>
+          <input class="md-input" name="gos_id" value="${propusk.gos_id || ""}" placeholder="A 888 AA 790 / O 632 CX 77 / 0013 AX 77" maxlength="12" required>
           </div>
           <div class="md-field">
             <label>Марка</label>
