@@ -24,6 +24,11 @@ export class PropusksPage {
       references: null,
       pagination: { page: 1, limit: 50, total: 0 }
     };
+    const storedPagination = this.context.state.ui?.propuskPagination;
+    if (storedPagination) {
+      this.state.pagination.page = storedPagination.page || 1;
+      this.state.pagination.limit = storedPagination.limit || 50;
+    }
     this.searchTimer = null;
   }
 
@@ -38,10 +43,15 @@ export class PropusksPage {
       const response = await apiGet(ENDPOINTS.propusksPaged, params);
       this.state.propusks = response.items || [];
       this.state.pagination.total = response.total || 0;
+      this.context.setPropuskPagination({
+        page: this.state.pagination.page,
+        limit: this.state.pagination.limit
+      });
       if (!this.state.propusks.length && this.state.pagination.total && page > 1) {
         const lastPage = Math.max(1, Math.ceil(this.state.pagination.total / limit));
         if (lastPage !== page) {
           this.state.pagination.page = lastPage;
+          this.context.setPropuskPagination({ page: lastPage });
           await this.loadData();
         }
       }
@@ -338,6 +348,7 @@ export class PropusksPage {
       const status = node.querySelector("#filter-status").value;
       this.state.filters = { search, status };
       this.state.pagination.page = 1;
+      this.context.setPropuskPagination({ page: 1 });
       await this.loadData();
       this.renderRows(node.querySelector("#propusk-rows"));
       this.renderPagination(node);
@@ -411,6 +422,7 @@ export class PropusksPage {
       if (btn.dataset.page === "next" && this.state.pagination.page < totalPages) {
         this.state.pagination.page += 1;
       }
+      this.context.setPropuskPagination({ page: this.state.pagination.page });
       await this.loadData();
       this.renderRows(node.querySelector("#propusk-rows"));
       this.renderPagination(node);
@@ -421,6 +433,7 @@ export class PropusksPage {
       if (!Number.isFinite(value) || value <= 0) return;
       this.state.pagination.limit = value;
       this.state.pagination.page = 1;
+      this.context.setPropuskPagination({ page: 1, limit: value });
       await this.loadData();
       this.renderRows(node.querySelector("#propusk-rows"));
       this.renderPagination(node);

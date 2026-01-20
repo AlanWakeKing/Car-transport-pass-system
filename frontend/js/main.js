@@ -42,6 +42,27 @@ function getFirstAccessiblePage(user) {
   return first ? first.key : "dashboard";
 }
 
+function canAccessPage(user, page) {
+  switch (page) {
+    case "dashboard":
+      return canShowMenuHome(user);
+    case "propusks":
+      return canShowMenuPropusks(user);
+    case "references":
+      return canShowMenuReferences(user);
+    case "print":
+      return canShowMenuPrint(user);
+    case "reports":
+      return canShowMenuReports(user);
+    case "users":
+      return canManageUsers(user) && canShowMenuUsers(user);
+    case "settings":
+      return user?.role === "admin" && canShowMenuSettings(user);
+    default:
+      return false;
+  }
+}
+
 async function showLogin() {
   appRoot.innerHTML = "";
   const view = renderLoginForm();
@@ -69,6 +90,7 @@ async function renderPage(name) {
   if (!page) return;
   const content = await page.render();
   shell.mountContent(content);
+  context.setLastPage(name);
 }
 
 function navigateWithFilters(page, filters) {
@@ -90,7 +112,12 @@ async function showApp() {
   context.on("navigate", ({ page, filters }) => navigateWithFilters(page, filters));
   shell.user = context.state.user;
   shell.render(context.state.user);
-  await renderPage(getFirstAccessiblePage(context.state.user));
+  const lastPage = context.state.ui?.lastPage;
+  const fallback = getFirstAccessiblePage(context.state.user);
+  const initialPage = lastPage && canAccessPage(context.state.user, lastPage)
+    ? lastPage
+    : fallback;
+  await renderPage(initialPage);
 }
 
 async function bootstrap() {

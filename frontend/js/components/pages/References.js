@@ -14,6 +14,11 @@ export class ReferencesPage {
       abonents: [],
       driversPagination: { page: 1, limit: 50, total: 0 }
     };
+    const storedPagination = this.context.state.ui?.driversPagination;
+    if (storedPagination) {
+      this.state.driversPagination.page = storedPagination.page || 1;
+      this.state.driversPagination.limit = storedPagination.limit || 50;
+    }
     this.host = null;
   }
 
@@ -39,10 +44,15 @@ export class ReferencesPage {
     const response = await apiGet(ENDPOINTS.references.abonentsPaged, { skip, limit });
     this.state.abonents = response.items || [];
     this.state.driversPagination.total = response.total || 0;
+    this.context.setDriversPagination({
+      page: this.state.driversPagination.page,
+      limit: this.state.driversPagination.limit
+    });
     if (!this.state.abonents.length && this.state.driversPagination.total && page > 1) {
       const lastPage = Math.max(1, Math.ceil(this.state.driversPagination.total / limit));
       if (lastPage !== page) {
         this.state.driversPagination.page = lastPage;
+        this.context.setDriversPagination({ page: lastPage });
         await this.loadDriversPage();
       }
     }
@@ -227,6 +237,7 @@ export class ReferencesPage {
       if (btn.dataset.page === "next" && this.state.driversPagination.page < totalPages) {
         this.state.driversPagination.page += 1;
       }
+      this.context.setDriversPagination({ page: this.state.driversPagination.page });
       await this.loadDriversPage();
       this.renderTables();
     });
@@ -236,6 +247,7 @@ export class ReferencesPage {
       if (!Number.isFinite(value) || value <= 0) return;
       this.state.driversPagination.limit = value;
       this.state.driversPagination.page = 1;
+      this.context.setDriversPagination({ page: 1, limit: value });
       await this.loadDriversPage();
       this.renderTables();
     });
