@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User, PropuskTemplate
 from auth.dependencies import require_admin
-from settings.schemas import PropuskTemplatePayload, PropuskTemplateResponse
+from settings.schemas import PropuskTemplatePayload, PropuskTemplateResponse, ApiTogglePayload, ApiToggleResponse, DocsTogglePayload, DocsToggleResponse
 from settings.service import (
     get_active_template,
     list_recent_templates,
@@ -13,10 +13,58 @@ from settings.service import (
     get_active_report_template,
     list_recent_report_templates,
     save_report_template,
+    get_api_enabled,
+    set_api_enabled,
+    get_docs_enabled,
+    set_docs_enabled,
 )
 
 
 router = APIRouter(prefix="/api/settings", tags=["Settings"])
+
+
+@router.get("/api-enabled", response_model=ApiToggleResponse)
+def get_api_enabled_state(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    return {"enabled": get_api_enabled(db)}
+
+
+@router.put("/api-enabled", response_model=ApiToggleResponse)
+def update_api_enabled_state(
+    payload: ApiTogglePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    setting = set_api_enabled(db, payload.enabled)
+    try:
+        enabled = bool(json.loads(setting.value))
+    except Exception:
+        enabled = True
+    return {"enabled": enabled}
+
+
+@router.get("/docs-enabled", response_model=DocsToggleResponse)
+def get_docs_enabled_state(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    return {"enabled": get_docs_enabled(db)}
+
+
+@router.put("/docs-enabled", response_model=DocsToggleResponse)
+def update_docs_enabled_state(
+    payload: DocsTogglePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    setting = set_docs_enabled(db, payload.enabled)
+    try:
+        enabled = bool(json.loads(setting.value))
+    except Exception:
+        enabled = True
+    return {"enabled": enabled}
 
 
 @router.get("/propusk-template/active", response_model=PropuskTemplateResponse)

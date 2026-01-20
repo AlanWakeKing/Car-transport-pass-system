@@ -19,3 +19,19 @@ class PropuskTemplateResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class ApiTogglePayload(BaseModel):
+    enabled: bool
+
+
+class ApiToggleResponse(BaseModel):
+    enabled: bool
+
+
+class DocsTogglePayload(BaseModel):
+    enabled: bool
+
+
+class DocsToggleResponse(BaseModel):
+    enabled: bool
+

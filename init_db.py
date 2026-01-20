@@ -5,7 +5,7 @@ from sqlalchemy import text
 from database import Base, engine, check_connection
 from models import (
     User, Organiz, Abonent, MarkAuto, ModelAuto, 
-    Propusk, PropuskArchive, PropuskHistory, NotificationLog, PropuskTemplate, ReportTemplate
+    Propusk, PropuskArchive, PropuskHistory, NotificationLog, PropuskTemplate, ReportTemplate, AppSetting
 )
 
 

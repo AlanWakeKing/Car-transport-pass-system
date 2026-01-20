@@ -1,5 +1,5 @@
 import { ENDPOINTS } from "../../config/constants.js";
-import { apiGet, apiPost, handleError } from "../../api/client.js";
+import { apiGet, apiPost, apiPut, handleError } from "../../api/client.js";
 import { toast } from "../common/Toast.js";
 
 const PROPUSK_FIELDS = [
@@ -232,6 +232,8 @@ export class SettingsPage {
     this.scale = { propusk: 4, report: 2 };
     this.state = {
       tab: "report",
+      api: { enabled: true, loaded: false },
+      docs: { enabled: true, loaded: false },
       templates: {
         propusk: { ...DEFAULT_PROPUSK_TEMPLATE },
         report: { ...DEFAULT_REPORT_TEMPLATE }
@@ -261,6 +263,28 @@ export class SettingsPage {
       this.state.loaded[tab] = true;
     } catch (err) {
       handleError(err);
+    }
+  }
+
+  async loadApiState() {
+    try {
+      const data = await apiGet(ENDPOINTS.settings.apiEnabled);
+      this.state.api.enabled = Boolean(data?.enabled);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      this.state.api.loaded = true;
+    }
+  }
+
+  async loadDocsState() {
+    try {
+      const data = await apiGet(ENDPOINTS.settings.docsEnabled);
+      this.state.docs.enabled = Boolean(data?.enabled);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      this.state.docs.loaded = true;
     }
   }
 
@@ -332,9 +356,41 @@ export class SettingsPage {
     if (!this.state.loaded[this.state.tab]) {
       await this.loadTab(this.state.tab);
     }
+    if (!this.state.api.loaded) {
+      await this.loadApiState();
+    }
+    if (!this.state.docs.loaded) {
+      await this.loadDocsState();
+    }
     const node = document.createElement("div");
     node.className = "section";
     node.innerHTML = `
+      <div class="md-card section">
+        <div class="md-toolbar">
+          <div>
+            <p class="tag">Настройки</p>
+            <h3 style="margin:0;">Доступ к API</h3>
+          </div>
+          <div class="pill-switch" id="api-toggle">
+            <button data-enabled="true" class="${this.state.api.enabled ? "active" : ""}">Вкл</button>
+            <button data-enabled="false" class="${!this.state.api.enabled ? "active" : ""}">Выкл</button>
+          </div>
+        </div>
+        <p class="hint">Отключение API блокирует все /api запросы, кроме входа и включения.</p>
+      </div>
+      <div class="md-card section">
+        <div class="md-toolbar">
+          <div>
+            <p class="tag">Настройки</p>
+            <h3 style="margin:0;">Доступ к /docs</h3>
+          </div>
+          <div class="pill-switch" id="docs-toggle">
+            <button data-enabled="true" class="${this.state.docs.enabled ? "active" : ""}">Вкл</button>
+            <button data-enabled="false" class="${!this.state.docs.enabled ? "active" : ""}">Выкл</button>
+          </div>
+        </div>
+        <p class="hint">Отключение скрывает Swagger/Redoc и OpenAPI схему.</p>
+      </div>
       <div class="md-card section">
         <div class="md-toolbar">
           <div>
@@ -530,6 +586,36 @@ export class SettingsPage {
       this.state.tab = tab;
       const replacement = await this.render();
       node.replaceWith(replacement);
+    });
+
+    node.querySelector("#api-toggle")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const enabled = btn.dataset.enabled === "true";
+      if (enabled === this.state.api.enabled) return;
+      try {
+        await apiPut(ENDPOINTS.settings.apiEnabled, { enabled });
+        this.state.api.enabled = enabled;
+        const replacement = await this.render();
+        node.replaceWith(replacement);
+      } catch (err) {
+        handleError(err);
+      }
+    });
+
+    node.querySelector("#docs-toggle")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const enabled = btn.dataset.enabled === "true";
+      if (enabled === this.state.docs.enabled) return;
+      try {
+        await apiPut(ENDPOINTS.settings.docsEnabled, { enabled });
+        this.state.docs.enabled = enabled;
+        const replacement = await this.render();
+        node.replaceWith(replacement);
+      } catch (err) {
+        handleError(err);
+      }
     });
 
     const canvas = node.querySelector("#template-canvas");

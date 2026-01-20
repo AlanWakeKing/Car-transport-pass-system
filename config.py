@@ -11,15 +11,15 @@ class Settings(BaseSettings):
     """
     
     # База данных
-    DATABASE_URL: str = "postgresql+psycopg://postgres:GfhjkmFlvbybcnhfnjhf@10.10.10.7:5432/propusk_system"
-    POSTGRES_DB: str = "propusk_system"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "GfhjkmFlvbybcnhfnjhf"
-    POSTGRES_HOST: str = "10.10.10.7"
+    DATABASE_URL: str | None = None
+    POSTGRES_DB: str | None = None
+    POSTGRES_USER: str | None = None
+    POSTGRES_PASSWORD: str | None = None
+    POSTGRES_HOST: str | None = None
     POSTGRES_PORT: int = 5432
     
     # JWT токены
-    SECRET_KEY: str = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 часа
     
@@ -34,12 +34,15 @@ class Settings(BaseSettings):
     CORS_ALLOW_ORIGINS: str = "http://localhost:8000,http://127.0.0.1:8000,https://parking.kinoteka.space/"
 
     # Cookies
-    COOKIE_SECURE: bool = False
-    COOKIE_SAMESITE: str = "lax"
+    COOKIE_SECURE: bool = True
+    COOKIE_SAMESITE: str = "strict"
+    CSRF_COOKIE_NAME: str = "csrf_token"
+    CSRF_HEADER_NAME: str = "X-CSRF-Token"
+
 
     APP_NAME: str = "Система управления пропусками"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    DEBUG: bool = False
     
     class Config:
         env_file = ".env"
@@ -50,8 +53,25 @@ class Settings(BaseSettings):
         raw = self.CORS_ALLOW_ORIGINS or ""
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
+
     def model_post_init(self, __context) -> None:
+        if not self.SECRET_KEY:
+            raise ValueError("SECRET_KEY must be set via environment")
         if not self.DATABASE_URL:
+            missing = [
+                name
+                for name in [
+                    "POSTGRES_DB",
+                    "POSTGRES_USER",
+                    "POSTGRES_PASSWORD",
+                    "POSTGRES_HOST",
+                ]
+                if not getattr(self, name)
+            ]
+            if missing:
+                raise ValueError(
+                    "DATABASE_URL or POSTGRES_* must be set via environment"
+                )
             self.DATABASE_URL = (
                 "postgresql+psycopg://"
                 f"{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"

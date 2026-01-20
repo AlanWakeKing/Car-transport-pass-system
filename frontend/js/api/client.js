@@ -2,6 +2,21 @@
 import { toast } from "../components/common/Toast.js";
 
 let authToken = null;
+const CSRF_COOKIE_NAME = "csrf_token";
+const CSRF_HEADER_NAME = "X-CSRF-Token";
+
+function getCookie(name) {
+  const escaped = name.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function addCsrfHeader(headers) {
+  const csrf = getCookie(CSRF_COOKIE_NAME);
+  if (csrf) {
+    headers[CSRF_HEADER_NAME] = csrf;
+  }
+}
 
 export function setAuthToken(token) {
   authToken = token;
@@ -15,6 +30,13 @@ async function request(path, options = {}) {
   const headers = options.headers ? { ...options.headers } : {};
   if (authToken) {
     headers.Authorization = `Bearer ${authToken}`;
+  }
+  const method = (options.method || "GET").toUpperCase();
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    const csrf = getCookie(CSRF_COOKIE_NAME);
+    if (csrf) {
+      headers[CSRF_HEADER_NAME] = csrf;
+    }
   }
   if (options.body && !(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
@@ -60,6 +82,10 @@ export function apiPost(path, body) {
 
 export function apiPatch(path, body) {
   return request(path, { method: "PATCH", body });
+}
+
+export function apiPut(path, body) {
+  return request(path, { method: "PUT", body });
 }
 
 export function apiDelete(path) {
@@ -108,6 +134,7 @@ export async function openFileInNewTab(path) {
 export async function downloadPost(path, body, filename = "file.pdf") {
   const headers = {};
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
+  addCsrfHeader(headers);
   headers["Content-Type"] = "application/json";
   const resp = await fetch(`${API_BASE}${path}`, {
     method: "POST",
@@ -133,6 +160,7 @@ export async function downloadPost(path, body, filename = "file.pdf") {
 export async function openPostInNewTab(path, body) {
   const headers = {};
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
+  addCsrfHeader(headers);
   headers["Content-Type"] = "application/json";
   const resp = await fetch(`${API_BASE}${path}`, {
     method: "POST",

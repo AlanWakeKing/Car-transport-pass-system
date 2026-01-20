@@ -9,6 +9,8 @@ const loginSubmit = document.getElementById("login-submit");
 const tgInput = document.getElementById("tg-user-id");
 const tgHint = document.getElementById("tg-hint");
 const closeNow = document.getElementById("close-now");
+const CSRF_COOKIE_NAME = "csrf_token";
+const CSRF_HEADER_NAME = "X-CSRF-Token";
 
 const webApp = window.Telegram?.WebApp;
 const tgUser = webApp?.initDataUnsafe?.user || null;
@@ -38,6 +40,19 @@ function showError(target, message) {
 function setLoading(button, isLoading) {
   button.disabled = isLoading;
   button.textContent = isLoading ? "Подождите..." : button.dataset.label;
+}
+
+function getCookie(name) {
+  const escaped = name.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function addCsrfHeader(headers) {
+  const csrf = getCookie(CSRF_COOKIE_NAME);
+  if (csrf) {
+    headers[CSRF_HEADER_NAME] = csrf;
+  }
 }
 
 loginSubmit.dataset.label = loginSubmit.textContent;
@@ -92,9 +107,11 @@ linkSubmit.addEventListener("click", async () => {
   }
   setLoading(linkSubmit, true);
   try {
+    const headers = { "content-type": "application/json" };
+    addCsrfHeader(headers);
     const response = await fetch("/api/auth/link-telegram", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       credentials: "include",
       body: JSON.stringify({ tg_user_id: tgValue }),
     });

@@ -8,6 +8,7 @@ from collections import deque
 from threading import Lock
 import time
 from typing import List
+import secrets
 import json
 from urllib import request as urllib_request
 from urllib import error as urllib_error
@@ -25,6 +26,24 @@ router = APIRouter(prefix="/api/auth", tags=["Авторизация"])
 
 _rate_lock = Lock()
 _rate_hits: dict[str, deque] = {}
+
+
+def _set_auth_cookies(response: Response, access_token: str) -> None:
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE
+    )
+    csrf_token = secrets.token_urlsafe(32)
+    response.set_cookie(
+        key=settings.CSRF_COOKIE_NAME,
+        value=csrf_token,
+        httponly=False,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE
+    )
 
 
 def rate_limit(request: Request, limit: int = 10, window_seconds: int = 60):
@@ -117,13 +136,7 @@ def login(
     )
 
     if response is not None:
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=settings.COOKIE_SECURE,
-            samesite=settings.COOKIE_SAMESITE
-        )
+        _set_auth_cookies(response, access_token)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -149,13 +162,7 @@ def login_json(
         data={"sub": str(user.id), "username": user.username, "role": user.role.value}
     )
 
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=settings.COOKIE_SECURE,
-        samesite=settings.COOKIE_SAMESITE
-    )
+    _set_auth_cookies(response, access_token)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -188,13 +195,7 @@ def login_telegram(
         data={"sub": str(user.id), "username": user.username, "role": user.role.value}
     )
 
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=settings.COOKIE_SECURE,
-        samesite=settings.COOKIE_SAMESITE
-    )
+    _set_auth_cookies(response, access_token)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -204,6 +205,7 @@ def logout(response: Response):
     Выход из системы (очистка cookies)
     """
     response.delete_cookie(key="access_token")
+    response.delete_cookie(key=settings.CSRF_COOKIE_NAME)
     return {"message": "ok"}
 
 

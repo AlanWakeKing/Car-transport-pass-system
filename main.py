@@ -1,18 +1,19 @@
 ﻿"""
 Главный файл приложения FastAPI
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from contextlib import asynccontextmanager
 import os
 
 from config import settings
-from database import check_connection
+from database import check_connection, SessionLocal
 from auth.router import router as auth_router
 from references.router import router as references_router
 from settings.router import router as settings_router
+from settings.service import get_api_enabled, get_docs_enabled
 
 
 # Lifespan для инициализации при старте
@@ -44,7 +45,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="API для управления автомобильными пропусками",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS (для фронтенда)
@@ -55,6 +56,62 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# CSRF protection for cookie-based auth
+_CSRF_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+_CSRF_EXEMPT_PATHS = {
+    "/api/auth/login",
+    "/api/auth/login-json",
+    "/api/auth/login-telegram",
+}
+_API_TOGGLE_EXEMPT_PATHS = {
+    "/api/auth/login",
+    "/api/auth/login-json",
+    "/api/auth/login-telegram",
+    "/api/auth/logout",
+    "/api/auth/me",
+    "/api/settings/api-enabled",
+    "/api/settings/docs-enabled",
+}
+
+_DOCS_PATHS = {"/docs", "/redoc", "/openapi.json"}
+
+
+@app.middleware("http")
+async def csrf_protect(request: Request, call_next):
+    if request.url.path in _DOCS_PATHS:
+        db = SessionLocal()
+        try:
+            if not get_docs_enabled(db):
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content={"detail": "Not found"},
+                )
+        finally:
+            db.close()
+    if request.url.path.startswith("/api") and request.url.path not in _API_TOGGLE_EXEMPT_PATHS:
+        db = SessionLocal()
+        try:
+            if not get_api_enabled(db):
+                return JSONResponse(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    content={"detail": "API disabled by administrator"},
+                )
+        finally:
+            db.close()
+    if request.method in _CSRF_METHODS:
+        access_cookie = request.cookies.get("access_token")
+        has_auth_header = request.headers.get("authorization")
+        if access_cookie and not has_auth_header:
+            if request.url.path not in _CSRF_EXEMPT_PATHS:
+                csrf_header = request.headers.get(settings.CSRF_HEADER_NAME)
+                csrf_cookie = request.cookies.get(settings.CSRF_COOKIE_NAME)
+                if not csrf_header or not csrf_cookie or csrf_header != csrf_cookie:
+                    return JSONResponse(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        content={"detail": "CSRF validation failed"},
+                    )
+    return await call_next(request)
 
 
 # Подключение роутеров API

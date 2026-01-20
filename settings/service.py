@@ -1,7 +1,7 @@
 import json
 from sqlalchemy.orm import Session
 
-from models import PropuskTemplate, ReportTemplate
+from models import PropuskTemplate, ReportTemplate, AppSetting
 
 
 def get_active_template(db: Session):
@@ -67,3 +67,55 @@ def save_report_template(db: Session, data: dict, created_by: int) -> ReportTemp
     db.commit()
 
     return template
+
+
+def get_api_enabled(db: Session) -> bool:
+    setting = db.query(AppSetting).filter(AppSetting.key == "api_enabled").first()
+    if not setting:
+        setting = AppSetting(key="api_enabled", value=json.dumps(True))
+        db.add(setting)
+        db.commit()
+        db.refresh(setting)
+        return True
+    try:
+        return bool(json.loads(setting.value))
+    except Exception:
+        return True
+
+
+def set_api_enabled(db: Session, enabled: bool) -> AppSetting:
+    setting = db.query(AppSetting).filter(AppSetting.key == "api_enabled").first()
+    if not setting:
+        setting = AppSetting(key="api_enabled", value=json.dumps(bool(enabled)))
+        db.add(setting)
+    else:
+        setting.value = json.dumps(bool(enabled))
+    db.commit()
+    db.refresh(setting)
+    return setting
+
+
+def get_docs_enabled(db: Session) -> bool:
+    setting = db.query(AppSetting).filter(AppSetting.key == "docs_enabled").first()
+    if not setting:
+        setting = AppSetting(key="docs_enabled", value=json.dumps(True))
+        db.add(setting)
+        db.commit()
+        db.refresh(setting)
+        return True
+    try:
+        return bool(json.loads(setting.value))
+    except Exception:
+        return True
+
+
+def set_docs_enabled(db: Session, enabled: bool) -> AppSetting:
+    setting = db.query(AppSetting).filter(AppSetting.key == "docs_enabled").first()
+    if not setting:
+        setting = AppSetting(key="docs_enabled", value=json.dumps(bool(enabled)))
+        db.add(setting)
+    else:
+        setting.value = json.dumps(bool(enabled))
+    db.commit()
+    db.refresh(setting)
+    return setting

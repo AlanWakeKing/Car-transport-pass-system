@@ -232,3 +232,7 @@ N8N_TG_WELCOME_WEBHOOK_URL=https://n8n.example/webhook/telegram-welcome
    - Фронтенд: http://localhost:8000/
    - API/Swagger: http://localhost:8000/docs
    - Health-check: http://localhost:8000/health
+
+## Лицензия
+Использование приложения допускается только с письменного разрешения правообладателя.
+Подробности см. в `LICENSE`.
