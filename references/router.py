@@ -3,7 +3,9 @@ API endpoints для справочников
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
+from sqlalchemy.exc import IntegrityError
+from psycopg.errors import UniqueViolation
 from typing import List, Optional
 
 from database import get_db
@@ -52,11 +54,28 @@ def create_organization(
             detail="Организация с таким названием уже существует"
         )
     
-    organization = Organiz(**org_data.dict())
-    db.add(organization)
-    db.commit()
-    db.refresh(organization)
-    return organization
+    def _insert_org() -> Organiz:
+        organization = Organiz(**org_data.dict())
+        db.add(organization)
+        db.commit()
+        db.refresh(organization)
+        return organization
+
+    try:
+        return _insert_org()
+    except IntegrityError as exc:
+        db.rollback()
+        is_pk_conflict = isinstance(getattr(exc, "orig", None), UniqueViolation) and "organiz_pkey" in str(exc.orig)
+        if not is_pk_conflict:
+            raise
+
+        # Reset sequence if it got out of sync and retry once.
+        db.execute(text(
+            "SELECT setval(pg_get_serial_sequence('organiz','id_org'), "
+            "COALESCE(MAX(id_org), 1), true) FROM organiz"
+        ))
+        db.commit()
+        return _insert_org()
 
 
 @router.get("/organizations/{org_id}", response_model=OrganizResponse)
