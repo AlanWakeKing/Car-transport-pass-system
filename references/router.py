@@ -399,11 +399,29 @@ def create_abonent(
             detail="Организация не найдена"
         )
     
-    abonent = Abonent(**abonent_data.dict())
-    db.add(abonent)
-    db.commit()
-    db.refresh(abonent)
-    
+    def _insert_abonent() -> Abonent:
+        abonent = Abonent(**abonent_data.dict())
+        db.add(abonent)
+        db.commit()
+        db.refresh(abonent)
+        return abonent
+
+    try:
+        abonent = _insert_abonent()
+    except IntegrityError as exc:
+        db.rollback()
+        is_pk_conflict = isinstance(getattr(exc, "orig", None), UniqueViolation) and "abonent_pkey" in str(exc.orig)
+        if not is_pk_conflict:
+            raise
+
+        # Reset sequence if it got out of sync and retry once.
+        db.execute(text(
+            "SELECT setval(pg_get_serial_sequence('abonent','id_fio'), "
+            "COALESCE(MAX(id_fio), 1), true) FROM abonent"
+        ))
+        db.commit()
+        abonent = _insert_abonent()
+
     abonent.org_name = org.org_name
     return abonent
 
