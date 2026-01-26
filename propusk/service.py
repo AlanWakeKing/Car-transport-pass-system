@@ -2,7 +2,9 @@
 Сервис для работы с пропусками
 """
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
+from sqlalchemy.exc import IntegrityError
+from psycopg.errors import UniqueViolation
 from fastapi import HTTPException, status
 from typing import Optional, List
 from datetime import date
@@ -28,15 +30,31 @@ class PropuskService:
         if not propusk_data.get("pass_type"):
             propusk_data["pass_type"] = "drive"
         
-        # Создаём пропуск
-        propusk = Propusk(
-            **propusk_data,
-            status=PropuskStatus.DRAFT,
-            created_by=created_by
-        )
-        
-        db.add(propusk)
-        db.flush()
+        def _insert_propusk() -> Propusk:
+            propusk = Propusk(
+                **propusk_data,
+                status=PropuskStatus.DRAFT,
+                created_by=created_by
+            )
+            db.add(propusk)
+            db.flush()
+            return propusk
+
+        try:
+            propusk = _insert_propusk()
+        except IntegrityError as exc:
+            db.rollback()
+            is_pk_conflict = isinstance(getattr(exc, "orig", None), UniqueViolation) and "propusk_pkey" in str(exc.orig)
+            if not is_pk_conflict:
+                raise
+
+            # Reset sequence if it got out of sync and retry once.
+            db.execute(text(
+                "SELECT setval(pg_get_serial_sequence('propusk','id_propusk'), "
+                "COALESCE(MAX(id_propusk), 1), true) FROM propusk"
+            ))
+            db.commit()
+            propusk = _insert_propusk()
         
         # Записываем в историю
         PropuskService._add_history(

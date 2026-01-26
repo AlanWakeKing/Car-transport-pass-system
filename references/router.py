@@ -169,11 +169,28 @@ def create_mark(
             detail="Марка с таким названием уже существует"
         )
     
-    mark = MarkAuto(**mark_data.dict())
-    db.add(mark)
-    db.commit()
-    db.refresh(mark)
-    return mark
+    def _insert_mark() -> MarkAuto:
+        mark = MarkAuto(**mark_data.dict())
+        db.add(mark)
+        db.commit()
+        db.refresh(mark)
+        return mark
+
+    try:
+        return _insert_mark()
+    except IntegrityError as exc:
+        db.rollback()
+        is_pk_conflict = isinstance(getattr(exc, "orig", None), UniqueViolation) and "mark_auto_pkey" in str(exc.orig)
+        if not is_pk_conflict:
+            raise
+
+        # Reset sequence if it got out of sync and retry once.
+        db.execute(text(
+            "SELECT setval(pg_get_serial_sequence('mark_auto','id_mark'), "
+            "COALESCE(MAX(id_mark), 1), true) FROM mark_auto"
+        ))
+        db.commit()
+        return _insert_mark()
 
 
 @router.patch("/marks/{mark_id}", response_model=MarkAutoResponse)
@@ -263,11 +280,29 @@ def create_model(
             detail="Марка не найдена"
         )
     
-    model = ModelAuto(**model_data.dict())
-    db.add(model)
-    db.commit()
-    db.refresh(model)
-    
+    def _insert_model() -> ModelAuto:
+        model = ModelAuto(**model_data.dict())
+        db.add(model)
+        db.commit()
+        db.refresh(model)
+        return model
+
+    try:
+        model = _insert_model()
+    except IntegrityError as exc:
+        db.rollback()
+        is_pk_conflict = isinstance(getattr(exc, "orig", None), UniqueViolation) and "model_auto_pkey" in str(exc.orig)
+        if not is_pk_conflict:
+            raise
+
+        # Reset sequence if it got out of sync and retry once.
+        db.execute(text(
+            "SELECT setval(pg_get_serial_sequence('model_auto','id_model'), "
+            "COALESCE(MAX(id_model), 1), true) FROM model_auto"
+        ))
+        db.commit()
+        model = _insert_model()
+
     model.mark_name = mark.mark_name
     return model
 
