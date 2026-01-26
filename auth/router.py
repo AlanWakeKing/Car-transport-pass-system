@@ -8,6 +8,9 @@ from collections import deque
 from threading import Lock
 import time
 from typing import List
+import time
+import hmac
+import hashlib
 import secrets
 import json
 from urllib import request as urllib_request
@@ -28,6 +31,19 @@ _rate_lock = Lock()
 _rate_hits: dict[str, deque] = {}
 
 
+def _sign_value(value: str) -> str:
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        value.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def _encode_last_active(timestamp: int) -> str:
+    raw = str(timestamp)
+    return f"{raw}.{_sign_value(raw)}"
+
+
 def _set_auth_cookies(response: Response, access_token: str) -> None:
     response.set_cookie(
         key="access_token",
@@ -41,6 +57,13 @@ def _set_auth_cookies(response: Response, access_token: str) -> None:
         key=settings.CSRF_COOKIE_NAME,
         value=csrf_token,
         httponly=False,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE
+    )
+    response.set_cookie(
+        key=settings.LAST_ACTIVE_COOKIE_NAME,
+        value=_encode_last_active(int(time.time())),
+        httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE
     )
@@ -206,6 +229,7 @@ def logout(response: Response):
     """
     response.delete_cookie(key="access_token")
     response.delete_cookie(key=settings.CSRF_COOKIE_NAME)
+    response.delete_cookie(key=settings.LAST_ACTIVE_COOKIE_NAME)
     return {"message": "ok"}
 
 

@@ -7,6 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from contextlib import asynccontextmanager
 import os
+import time
+import hmac
+import hashlib
 
 from config import settings
 from database import check_connection, SessionLocal
@@ -77,8 +80,50 @@ _API_TOGGLE_EXEMPT_PATHS = {
 _DOCS_PATHS = {"/docs", "/redoc", "/openapi.json"}
 
 
+def _sign_value(value: str) -> str:
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        value.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def _decode_last_active(raw_value: str | None) -> int | None:
+    if not raw_value:
+        return None
+    if "." not in raw_value:
+        return None
+    ts_str, sig = raw_value.rsplit(".", 1)
+    if not ts_str.isdigit():
+        return None
+    expected = _sign_value(ts_str)
+    if not hmac.compare_digest(expected, sig):
+        return None
+    return int(ts_str)
+
+
+def _encode_last_active(timestamp: int) -> str:
+    raw = str(timestamp)
+    return f"{raw}.{_sign_value(raw)}"
+
+
 @app.middleware("http")
 async def csrf_protect(request: Request, call_next):
+    access_cookie = request.cookies.get("access_token")
+    if access_cookie:
+        now = int(time.time())
+        last_active = _decode_last_active(
+            request.cookies.get(settings.LAST_ACTIVE_COOKIE_NAME)
+        )
+        if last_active is None or now - last_active > settings.SESSION_IDLE_TIMEOUT_SECONDS:
+            response = JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Session expired due to inactivity"},
+            )
+            response.delete_cookie(key="access_token")
+            response.delete_cookie(key=settings.CSRF_COOKIE_NAME)
+            response.delete_cookie(key=settings.LAST_ACTIVE_COOKIE_NAME)
+            return response
     if request.url.path in _DOCS_PATHS:
         db = SessionLocal()
         try:
@@ -111,7 +156,16 @@ async def csrf_protect(request: Request, call_next):
                         status_code=status.HTTP_403_FORBIDDEN,
                         content={"detail": "CSRF validation failed"},
                     )
-    return await call_next(request)
+    response = await call_next(request)
+    if access_cookie:
+        response.set_cookie(
+            key=settings.LAST_ACTIVE_COOKIE_NAME,
+            value=_encode_last_active(int(time.time())),
+            httponly=True,
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE,
+        )
+    return response
 
 
 # Подключение роутеров API

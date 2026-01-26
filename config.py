@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "strict"
     CSRF_COOKIE_NAME: str = "csrf_token"
     CSRF_HEADER_NAME: str = "X-CSRF-Token"
+    LAST_ACTIVE_COOKIE_NAME: str = "last_active"
+    SESSION_IDLE_TIMEOUT_SECONDS: int = 2 * 60 * 60
 
 
     APP_NAME: str = "Система управления пропусками"
