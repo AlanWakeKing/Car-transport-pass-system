@@ -7,6 +7,7 @@ export class AppShell {
     this.onNavigateWithFilters = onNavigateWithFilters;
     this.onLogout = onLogout;
     this.current = "propusks";
+    this.clockTimer = null;
   }
 
   render(user) {
@@ -45,7 +46,7 @@ export class AppShell {
                 <p class="tag">Цифровой пропускной режим</p>
                 <h1 style="letter-spacing:-0.01em;">Центр управления доступом</h1>
               </div>
-              <div></div>
+              <div class="tag" id="app-clock"></div>
             </div>
           </header>
           <section class="content" id="content"></section>
@@ -53,6 +54,7 @@ export class AppShell {
       </div>
     `;
     this.bindEvents();
+    this.startClock();
   }
 
   menuItem(page, icon, label) {
@@ -92,6 +94,21 @@ export class AppShell {
     logout?.addEventListener("click", async () => {
       await this.onLogout();
     });
+  }
+
+  startClock() {
+    const clock = this.root.querySelector("#app-clock");
+    if (!clock) return;
+    if (this.clockTimer) {
+      clearInterval(this.clockTimer);
+      this.clockTimer = null;
+    }
+    const update = () => {
+      const now = new Date();
+      clock.textContent = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    };
+    update();
+    this.clockTimer = setInterval(update, 1000 * 30);
   }
 
   updateActive() {

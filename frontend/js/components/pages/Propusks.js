@@ -20,7 +20,7 @@ export class PropusksPage {
     this.context = context;
     this.state = {
       propusks: [],
-      filters: { status: "", id_org: "", id_fio: "", date_to: "" },
+      filters: { search: "", status: "" },
       sort: { key: "", dir: "asc" },
       references: null,
       pagination: { page: 1, limit: 50, total: 0 },
@@ -33,8 +33,8 @@ export class PropusksPage {
       this.state.pagination.page = storedPagination.page || 1;
     }
     const storedFilters = this.context.state.ui?.propuskFilters;
-    if (storedFilters) {
-      this.state.filters = { ...this.state.filters, ...storedFilters };
+    if (storedFilters?.status) {
+      this.state.filters.status = storedFilters.status;
     }
     this.searchTimer = null;
     this.scrollObserver = null;
@@ -47,10 +47,8 @@ export class PropusksPage {
       const { page, limit } = this.state.pagination;
       const skip = (page - 1) * limit;
       const params = { limit, skip };
+      if (filters.search) params.search = filters.search;
       if (filters.status) params.status = filters.status;
-      if (filters.id_org) params.id_org = filters.id_org;
-      if (filters.id_fio) params.id_fio = filters.id_fio;
-      if (filters.date_to) params.date_to = filters.date_to;
       const response = await apiGet(ENDPOINTS.propusksPaged, params);
       const items = response.items || [];
       this.state.propusks = append ? [...this.state.propusks, ...items] : items;
@@ -237,15 +235,6 @@ export class PropusksPage {
     }
     await this.loadReferences();
     await this.loadData();
-    const orgOptions = (this.state.references?.orgs || [])
-      .map((o) => `<option value="${o.id_org}">${o.org_name}</option>`)
-      .join("");
-    const driverOptions = (this.state.references?.abonents || [])
-      .map((a) => {
-        const fullName = `${a.surname} ${a.name}${a.otchestvo ? " " + a.otchestvo : ""}`;
-        return `<option value="${a.id_fio}">${fullName}</option>`;
-      })
-      .join("");
     const node = document.createElement("div");
     this.host = node;
     node.className = "section";
@@ -256,29 +245,18 @@ export class PropusksPage {
             <p class="tag">Пропуска</p>
             <h3 style="margin:0;">Реестр обращений</h3>
           </div>
-          <div class="filters">
-            <select class="md-select" id="filter-org">
-              <option value="">Компания</option>
-              ${orgOptions}
-            </select>
-            <select class="md-select" id="filter-driver">
-              <option value="">Водитель</option>
-              ${driverOptions}
-            </select>
-            <input class="md-input" id="filter-valid-until" type="date" value="${this.state.filters.date_to || ""}">
+          <div class="filters single-row">
+            <input class="md-input" id="filter-search" placeholder="\u041f\u043e\u0438\u0441\u043a \u043f\u043e \u043d\u043e\u043c\u0435\u0440\u0443, \u0424\u0418\u041e \u0438\u043b\u0438 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438" value="${this.state.filters.search || ""}">
             <select class="md-select" id="filter-status" value="${this.state.filters.status || ""}">
-              <option value="">Все статусы</option>
-              <option value="draft">Черновик</option>
-              <option value="active">Активен</option>
-              <option value="pending_delete">На удаление</option>
-              <option value="revoked">Аннулирован</option>
+              <option value="">\u0412\u0441\u0435 \u0441\u0442\u0430\u0442\u0443\u0441\u044b</option>
+              <option value="draft">\u0427\u0435\u0440\u043d\u043e\u0432\u0438\u043a</option>
+              <option value="active">\u0410\u043a\u0442\u0438\u0432\u0435\u043d</option>
+              <option value="pending_delete">\u041d\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0438\u0435</option>
+              <option value="revoked">\u0410\u043d\u043d\u0443\u043b\u0438\u0440\u043e\u0432\u0430\u043d</option>
             </select>
-            <button class="md-btn secondary" id="apply-filters">
-              <span class="material-icons-round">search</span>Фильтр
-            </button>
             ${canCreatePropusks(this.context.state.user) ? `
             <button class="md-btn" id="new-propusk">
-              <span class="material-icons-round">add_circle</span>Новый пропуск
+              <span class="material-icons-round">add_circle</span>\u041d\u043e\u0432\u044b\u0439 \u043f\u0440\u043e\u043f\u0443\u0441\u043a
             </button>` : ""}
           </div>
         </div>
@@ -316,14 +294,6 @@ export class PropusksPage {
     const statusSelect = node.querySelector("#filter-status");
     if (statusSelect) {
       statusSelect.value = this.state.filters.status || "";
-    }
-    const orgSelect = node.querySelector("#filter-org");
-    if (orgSelect) {
-      orgSelect.value = this.state.filters.id_org || "";
-    }
-    const driverSelect = node.querySelector("#filter-driver");
-    if (driverSelect) {
-      driverSelect.value = this.state.filters.id_fio || "";
     }
     return node;
   }
@@ -450,14 +420,11 @@ export class PropusksPage {
 
   bind(node) {
     const applyFilters = async () => {
-      const id_org = node.querySelector("#filter-org").value;
-      const id_fio = node.querySelector("#filter-driver").value;
-      const date_to = node.querySelector("#filter-valid-until").value;
+      const search = node.querySelector("#filter-search").value;
       const status = node.querySelector("#filter-status").value;
-      this.state.filters = { id_org, id_fio, date_to, status };
+      this.state.filters = { search, status };
       this.state.pagination.page = 1;
       this.context.setPropuskPagination({ page: 1 });
-      this.context.setPropuskFilters(this.state.filters);
       await this.loadData();
       this.renderRows(node.querySelector("#propusk-rows"));
       if (this.state.usePagination) {
@@ -467,9 +434,15 @@ export class PropusksPage {
       }
     };
 
-    node.querySelector("#apply-filters")?.addEventListener("click", async () => {
-      await applyFilters();
-    });
+    const scheduleApply = () => {
+      if (this.searchTimer) clearTimeout(this.searchTimer);
+      this.searchTimer = setTimeout(async () => {
+        await applyFilters();
+      }, 350);
+    };
+
+    node.querySelector("#filter-search")?.addEventListener("input", scheduleApply);
+    node.querySelector("#filter-status")?.addEventListener("change", scheduleApply);
 
     node.querySelector("thead")?.addEventListener("click", (e) => {
       const th = e.target.closest("th[data-sort]");
@@ -546,6 +519,7 @@ export class PropusksPage {
       await this.loadData();
       this.renderRows(node.querySelector("#propusk-rows"));
       this.renderPagination(node);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
   }

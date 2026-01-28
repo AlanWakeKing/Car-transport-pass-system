@@ -146,6 +146,24 @@
   flex-wrap: wrap;
 }
 
+.toolbar .filters.single-row {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.toolbar .filters.single-row .md-input {
+  flex: 1 1 320px;
+  min-width: 260px;
+}
+
+.toolbar .filters.single-row .md-select {
+  flex: 0 0 220px;
+}
+
+.toolbar .filters.single-row .md-btn {
+  flex: 0 0 auto;
+}
+
 .pill {
   padding: 0.35rem 0.65rem;
   border-radius: 999px;

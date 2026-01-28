@@ -411,7 +411,7 @@ class PropuskService:
         
         if date_to:
             query = query.filter(Propusk.valid_until <= date_to)
-        
+
         # Поиск по гос. номеру или ФИО владельца
         if search:
             query = query.join(Abonent).join(Organiz).filter(
@@ -460,7 +460,7 @@ class PropuskService:
 
         if date_from:
             query = query.filter(Propusk.release_date >= date_from)
-
+        
         if date_to:
             query = query.filter(Propusk.valid_until <= date_to)
 

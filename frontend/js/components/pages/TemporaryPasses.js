@@ -141,6 +141,14 @@ export class TemporaryPassesPage {
     return node;
   }
 
+  getTimeAccessState() {
+    const now = new Date();
+    const minutes = now.getHours() * 60 + now.getMinutes();
+    const blocked = minutes < 8 * 60 || minutes >= 20 * 60;
+    const timeLabel = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    return { blocked, timeLabel };
+  }
+
   getTotalPages() {
     const { limit, total } = this.state.pagination;
     if (!total) return 1;
@@ -336,12 +344,12 @@ export class TemporaryPassesPage {
     const warning = form.querySelector("#temp-pass-time-warning");
     const submitBtn = form.querySelector("#submit-temp-pass");
     if (warning) {
-      const now = new Date();
-      const blocked = now.getHours() < 8 || now.getHours() >= 20;
+      const { blocked, timeLabel } = this.getTimeAccessState();
       warning.style.display = blocked ? "block" : "none";
+      warning.textContent = `\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0434\u0430\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0441 08:00 \u0434\u043e 20:00. \u0421\u0435\u0439\u0447\u0430\u0441: ${timeLabel}`;
       if (submitBtn) {
         submitBtn.disabled = blocked;
-        submitBtn.title = blocked ? "\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0434\u0430\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0441 08:00 \u0434\u043e 20:00." : "";
+        submitBtn.title = blocked ? `\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0434\u0430\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0441 08:00 \u0434\u043e 20:00. \u0421\u0435\u0439\u0447\u0430\u0441: ${timeLabel}` : "";
       }
     }
     gosInput?.addEventListener("input", () => {
@@ -363,9 +371,9 @@ export class TemporaryPassesPage {
     form.querySelector("#cancel-create")?.addEventListener("click", () => instance.close());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const now = new Date();
-      if (now.getHours() < 8 || now.getHours() >= 20) {
-        toast.show("\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0434\u0430\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0441 08:00 \u0434\u043e 20:00.", "warning");
+      const { blocked, timeLabel } = this.getTimeAccessState();
+      if (blocked) {
+        toast.show(`\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0434\u0430\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0441 08:00 \u0434\u043e 20:00. \u0421\u0435\u0439\u0447\u0430\u0441: ${timeLabel}`, "warning");
         return;
       }
       const data = Object.fromEntries(new FormData(form).entries());
