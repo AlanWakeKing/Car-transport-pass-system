@@ -38,6 +38,16 @@ export class TemporaryPassesPage {
     return this.state.references;
   }
 
+  async refreshReferences() {
+    try {
+      const orgs = await apiGet(ENDPOINTS.references.organizations);
+      this.state.references = { orgs };
+    } catch (err) {
+      handleError(err);
+    }
+    return this.state.references;
+  }
+
   async loadData() {
     const { page, limit } = this.state.pagination;
     const skip = (page - 1) * limit;
@@ -86,20 +96,17 @@ export class TemporaryPassesPage {
             <p class="tag">Временные пропуска</p>
             <h3 style="margin:0;">Журнал гостей</h3>
           </div>
-          <div class="filters">
-            <input class="md-input" id="filter-gos" placeholder="Поиск по госномеру" value="${this.state.filters.gos_id || ""}">
+          <div class="filters single-row">
+            <input class="md-input" id="filter-gos" placeholder="\u041f\u043e\u0438\u0441\u043a \u043f\u043e \u0433\u043e\u0441\u043d\u043e\u043c\u0435\u0440\u0443" value="${this.state.filters.gos_id || ""}">
             <select class="md-select" id="filter-status">
-              <option value="">Все статусы</option>
-              <option value="active">Активен</option>
-              <option value="expired">Истек</option>
-              <option value="revoked">Отозван</option>
+              <option value="">\u0412\u0441\u0435 \u0441\u0442\u0430\u0442\u0443\u0441\u044b</option>
+              <option value="active">\u0410\u043a\u0442\u0438\u0432\u0435\u043d</option>
+              <option value="expired">\u0418\u0441\u0442\u0435\u043a</option>
+              <option value="revoked">\u041e\u0442\u043e\u0437\u0432\u0430\u043d</option>
             </select>
-            <button class="md-btn secondary" id="apply-filters">
-              <span class="material-icons-round">search</span>Фильтр
-            </button>
             ${canCreateTempPass(this.context.state.user) ? `
             <button class="md-btn" id="new-temp-pass">
-              <span class="material-icons-round">add_circle</span>Выдать
+              <span class="material-icons-round">add_circle</span>\u0412\u044b\u0434\u0430\u0442\u044c
             </button>` : ""}
           </div>
         </div>
@@ -123,11 +130,6 @@ export class TemporaryPassesPage {
           <button class="md-btn ghost" data-page="prev">Назад</button>
           <div class="pagination-info" id="temp-pass-page-info"></div>
           <button class="md-btn ghost" data-page="next">Вперёд</button>
-          <select class="md-select" id="temp-pass-limit">
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
         </div>
       </div>
     `;
@@ -159,7 +161,6 @@ export class TemporaryPassesPage {
     const info = node.querySelector("#temp-pass-page-info");
     const prevBtn = node.querySelector("[data-page='prev']");
     const nextBtn = node.querySelector("[data-page='next']");
-    const limitSelect = node.querySelector("#temp-pass-limit");
     const { page, limit, total } = this.state.pagination;
     const totalPages = this.getTotalPages();
     if (info) {
@@ -167,7 +168,6 @@ export class TemporaryPassesPage {
     }
     if (prevBtn) prevBtn.disabled = page <= 1;
     if (nextBtn) nextBtn.disabled = page >= totalPages || total === 0;
-    if (limitSelect) limitSelect.value = String(limit);
   }
 
   renderRows(tbody) {
@@ -213,16 +213,15 @@ export class TemporaryPassesPage {
       this.updateOrgInfo(node, "");
     };
 
-    node.querySelector("#apply-filters")?.addEventListener("click", async () => {
-      await applyFilters();
-    });
-
-    node.querySelector("#filter-gos")?.addEventListener("input", () => {
+    const scheduleApply = () => {
       if (this.searchTimer) clearTimeout(this.searchTimer);
       this.searchTimer = setTimeout(async () => {
         await applyFilters();
       }, 350);
-    });
+    };
+
+    node.querySelector("#filter-gos")?.addEventListener("input", scheduleApply);
+    node.querySelector("#filter-status")?.addEventListener("change", scheduleApply);
 
     node.querySelector("#temp-pass-rows")?.addEventListener("click", async (e) => {
       const actionBtn = e.target.closest("button[data-action]");
@@ -233,16 +232,18 @@ export class TemporaryPassesPage {
       try {
         if (actionBtn.dataset.action === "enter") {
           await apiPost(`${ENDPOINTS.temporaryPasses}/${id}/enter`, {});
-          toast.show("Въезд отмечен", "success");
+          toast.show("\u0412\u044a\u0435\u0437\u0434 \u043e\u0442\u043c\u0435\u0447\u0435\u043d", "success");
           await this.loadData();
+          await this.refreshReferences();
           this.renderRows(document.querySelector("#temp-pass-rows"));
           this.renderPagination(document);
           return;
         }
         if (actionBtn.dataset.action === "exit") {
           await apiPost(`${ENDPOINTS.temporaryPasses}/${id}/exit`, {});
-          toast.show("Выезд отмечен", "success");
+          toast.show("\u0412\u044b\u0435\u0437\u0434 \u043e\u0442\u043c\u0435\u0447\u0435\u043d", "success");
           await this.loadData();
+          await this.refreshReferences();
           this.renderRows(document.querySelector("#temp-pass-rows"));
           this.renderPagination(document);
           return;
@@ -264,8 +265,8 @@ export class TemporaryPassesPage {
       }
     });
 
-    node.querySelector("#new-temp-pass")?.addEventListener("click", () => {
-      this.openCreateModal();
+    node.querySelector("#new-temp-pass")?.addEventListener("click", async () => {
+      await this.openCreateModal();
     });
 
     node.querySelector("#temp-pass-pagination")?.addEventListener("click", async (e) => {
@@ -282,22 +283,13 @@ export class TemporaryPassesPage {
       await this.loadData();
       this.renderRows(node.querySelector("#temp-pass-rows"));
       this.renderPagination(node);
-    });
-
-    node.querySelector("#temp-pass-limit")?.addEventListener("change", async (e) => {
-      const value = Number(e.target.value);
-      if (!Number.isFinite(value) || value <= 0) return;
-      this.state.pagination.limit = value;
-      this.state.pagination.page = 1;
-      this.context.setTemporaryPagination({ page: 1, limit: value });
-      await this.loadData();
-      this.renderRows(node.querySelector("#temp-pass-rows"));
-      this.renderPagination(node);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
   }
 
-  openCreateModal() {
+  async openCreateModal() {
+    await this.refreshReferences();
     const orgOptions = this.renderOrgDatalistOptions();
     const form = document.createElement("form");
     form.className = "section";
@@ -318,8 +310,12 @@ export class TemporaryPassesPage {
           </datalist>
           <input type="hidden" name="id_org">
         </div>
-        <div class="md-field" style="grid-column:1/-1;">
+        <div class="md-field">
           <label>Гостевые места</label>
+          <div class="tag" id="org-guest-info">-</div>
+        </div>
+        <div class="md-field">
+          <label>Свободные места</label>
           <div class="tag" id="org-free-info">-</div>
         </div>
         <div class="md-field">
@@ -344,12 +340,12 @@ export class TemporaryPassesPage {
     const warning = form.querySelector("#temp-pass-time-warning");
     const submitBtn = form.querySelector("#submit-temp-pass");
     if (warning) {
-      const { blocked, timeLabel } = this.getTimeAccessState();
-      warning.style.display = blocked ? "block" : "none";
+      const { timeLabel } = this.getTimeAccessState();
+      warning.style.display = "block";
       warning.textContent = `\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0434\u0430\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0441 08:00 \u0434\u043e 20:00. \u0421\u0435\u0439\u0447\u0430\u0441: ${timeLabel}`;
       if (submitBtn) {
-        submitBtn.disabled = blocked;
-        submitBtn.title = blocked ? `\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0434\u0430\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0441 08:00 \u0434\u043e 20:00. \u0421\u0435\u0439\u0447\u0430\u0441: ${timeLabel}` : "";
+        submitBtn.disabled = false;
+        submitBtn.title = "";
       }
     }
     gosInput?.addEventListener("input", () => {
@@ -371,11 +367,6 @@ export class TemporaryPassesPage {
     form.querySelector("#cancel-create")?.addEventListener("click", () => instance.close());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const { blocked, timeLabel } = this.getTimeAccessState();
-      if (blocked) {
-        toast.show(`\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0434\u0430\u0432\u0430\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0441 08:00 \u0434\u043e 20:00. \u0421\u0435\u0439\u0447\u0430\u0441: ${timeLabel}`, "warning");
-        return;
-      }
       const data = Object.fromEntries(new FormData(form).entries());
       try {
         data.gos_id = formatGosNumber(data.gos_id);
@@ -389,6 +380,7 @@ export class TemporaryPassesPage {
         data.id_org = Number(data.id_org);
         await apiPost(ENDPOINTS.temporaryPasses, data);
         toast.show("Временный пропуск создан", "success");
+        await this.refreshReferences();
         instance.close();
         await this.loadData();
         this.renderRows(document.querySelector("#temp-pass-rows"));
@@ -420,6 +412,7 @@ export class TemporaryPassesPage {
       try {
         await apiPost(`${ENDPOINTS.temporaryPasses}/${id}/revoke`, { comment });
         toast.show("Пропуск отозван", "success");
+        await this.refreshReferences();
         instance.close();
         await this.loadData();
         this.renderRows(document.querySelector("#temp-pass-rows"));
@@ -446,6 +439,7 @@ export class TemporaryPassesPage {
       try {
         await apiDelete(`${ENDPOINTS.temporaryPasses}/${id}`);
         toast.show("Пропуск удалён", "success");
+        await this.refreshReferences();
         instance.close();
         await this.loadData();
         this.renderRows(document.querySelector("#temp-pass-rows"));
@@ -475,7 +469,8 @@ export class TemporaryPassesPage {
       .map((o) => {
         const safeName = this.escapeHtml(o.org_name || "");
         const free = Number.isFinite(Number(o.free_mesto)) ? Number(o.free_mesto) : 0;
-        return `<option value="${safeName} (мест: ${free})"></option>`;
+        const limit = Number.isFinite(Number(o.free_mesto_limit)) ? Number(o.free_mesto_limit) : free;
+        return `<option value="${safeName} (мест: ${limit}, свободно: ${free})"></option>`;
       })
       .join("");
   }
@@ -483,7 +478,7 @@ export class TemporaryPassesPage {
   resolveOrgId(name) {
     const query = (name || "").trim().toLowerCase();
     if (!query) return null;
-    const normalized = query.replace(/\s*\(мест:.*\)\s*$/, "").trim();
+    const normalized = query.replace(/\s*\(.*\)\s*$/, "").trim();
     const org = (this.state.references?.orgs || []).find((o) => {
       const orgName = (o.org_name || "").toLowerCase();
       return orgName === query || orgName === normalized;
@@ -497,15 +492,22 @@ export class TemporaryPassesPage {
   }
 
   updateOrgInfo(root, orgId) {
-    const info = root.querySelector("#filter-org-info") || root.querySelector("#org-free-info");
-    if (!info) return;
+    const guestInfo = root.querySelector("#org-guest-info");
+    const freeInfo = root.querySelector("#org-free-info");
+    const info = root.querySelector("#filter-org-info");
+    if (!guestInfo && !freeInfo && !info) return;
     if (!orgId) {
-      info.textContent = "-";
+      if (guestInfo) guestInfo.textContent = "-";
+      if (freeInfo) freeInfo.textContent = "-";
+      if (info) info.textContent = "-";
       return;
     }
     const org = this.getOrgById(orgId);
     const free = org ? Number(org.free_mesto || 0) : 0;
-    info.textContent = `Гостевых мест: ${free}`;
+    const limit = org ? Number.isFinite(Number(org.free_mesto_limit)) ? Number(org.free_mesto_limit) : free : 0;
+    if (guestInfo) guestInfo.textContent = `Гостевых мест: ${limit}`;
+    if (freeInfo) freeInfo.textContent = `Свободных мест: ${free}`;
+    if (info) info.textContent = `Гостевых мест: ${limit}`;
   }
 
   escapeHtml(value) {

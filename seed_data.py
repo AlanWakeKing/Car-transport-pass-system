@@ -21,10 +21,10 @@ def seed_database():
         print("📋 Создание организаций...")
         
         organizations = [
-            {"org_name": "ООО Лукавто", "free_mesto": 10},
-            {"org_name": "ПАО Газпром", "free_mesto": 25},
-            {"org_name": "ООО Рога и Копыта", "free_mesto": 5},
-            {"org_name": "ИП Иванов", "free_mesto": 3},
+            {"org_name": "ООО Лукавто", "free_mesto": 10, "free_mesto_limit": 10},
+            {"org_name": "ПАО Газпром", "free_mesto": 25, "free_mesto_limit": 25},
+            {"org_name": "ООО Рога и Копыта", "free_mesto": 5, "free_mesto_limit": 5},
+            {"org_name": "ИП Иванов", "free_mesto": 3, "free_mesto_limit": 3},
         ]
         
         created_orgs = []

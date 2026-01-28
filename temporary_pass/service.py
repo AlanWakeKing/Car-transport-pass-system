@@ -55,21 +55,17 @@ class TemporaryPassService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="У организации нет свободных гостевых мест",
             )
-        active_count = (
-            db.query(func.count(TemporaryPass.id))
-            .filter(
-                TemporaryPass.id_org == id_org,
-                TemporaryPass.revoked_at.is_(None),
-                TemporaryPass.valid_from <= now,
-                TemporaryPass.valid_until > now,
-            )
-            .scalar()
-        )
-        if (active_count or 0) >= org.free_mesto:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Свободные гостевые места закончились",
-            )
+
+    @staticmethod
+    def _change_free_mesto(org: Organiz, delta: int) -> None:
+        current = org.free_mesto or 0
+        limit = org.free_mesto_limit if org.free_mesto_limit is not None else current
+        new_value = current + delta
+        if new_value < 0:
+            new_value = 0
+        if limit is not None and new_value > limit:
+            new_value = limit
+        org.free_mesto = new_value
 
     @staticmethod
     def _check_duplicate_gos_id(db: Session, gos_id: str, now: datetime) -> None:
@@ -95,6 +91,7 @@ class TemporaryPassService:
         start_dt, end_dt = TemporaryPassService._ensure_business_hours(now)
         TemporaryPassService._check_capacity(db, payload.get("id_org"), now)
         TemporaryPassService._check_duplicate_gos_id(db, payload.get("gos_id"), now)
+        org = TemporaryPassService._get_org_or_404(db, payload.get("id_org"))
 
         temp_pass = TemporaryPass(
             gos_id=payload.get("gos_id"),
@@ -105,6 +102,7 @@ class TemporaryPassService:
             valid_until=end_dt,
             created_by=created_by,
         )
+        TemporaryPassService._change_free_mesto(org, -1)
         db.add(temp_pass)
         db.commit()
         db.refresh(temp_pass)
@@ -133,6 +131,8 @@ class TemporaryPassService:
         temp_pass.revoked_by = user_id
         if comment:
             temp_pass.comment = comment
+        if temp_pass.organization:
+            TemporaryPassService._change_free_mesto(temp_pass.organization, 1)
         db.commit()
         db.refresh(temp_pass)
         return temp_pass
@@ -153,7 +153,7 @@ class TemporaryPassService:
         db.commit()
 
     @staticmethod
-    def mark_enter(db: Session, pass_id: int) -> TemporaryPass:
+    def mark_enter(db: Session, pass_id: int, user_id: int) -> TemporaryPass:
         temp_pass = (
             db.query(TemporaryPass)
             .filter(TemporaryPass.id == pass_id)
@@ -167,6 +167,7 @@ class TemporaryPassService:
         if temp_pass.entered_at:
             return temp_pass
         temp_pass.entered_at = TemporaryPassService._now()
+        temp_pass.entered_by = user_id
         db.commit()
         db.refresh(temp_pass)
         return temp_pass
@@ -191,8 +192,11 @@ class TemporaryPassService:
                 detail="Нельзя отметить выезд без отметки въезда",
             )
         temp_pass.exited_at = TemporaryPassService._now()
+        temp_pass.exited_by = user_id
         temp_pass.revoked_at = temp_pass.exited_at
         temp_pass.revoked_by = user_id
+        if temp_pass.organization:
+            TemporaryPassService._change_free_mesto(temp_pass.organization, 1)
         db.commit()
         db.refresh(temp_pass)
         return temp_pass

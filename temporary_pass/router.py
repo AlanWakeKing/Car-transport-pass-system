@@ -201,7 +201,7 @@ def mark_enter(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_temp_create),
 ):
-    temp_pass = TemporaryPassService.mark_enter(db, pass_id)
+    temp_pass = TemporaryPassService.mark_enter(db, pass_id, current_user.id)
     return _enrich_temp_pass(temp_pass)
 
 
@@ -220,4 +220,6 @@ def _enrich_temp_pass(temp_pass) -> TemporaryPassResponse:
         temp_pass.org_name = temp_pass.organization.org_name
     if temp_pass.creator:
         temp_pass.creator_name = temp_pass.creator.full_name
+    if getattr(temp_pass, "exiter", None):
+        temp_pass.exited_by_name = temp_pass.exiter.full_name
     return temp_pass

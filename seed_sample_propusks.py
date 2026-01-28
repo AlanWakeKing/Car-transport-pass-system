@@ -41,7 +41,12 @@ def ensure_base_data(session: Session):
         session.commit()
         session.refresh(admin)
 
-    org = get_or_create(session, Organiz, org_name="ООО Логистик", defaults={"free_mesto": 5})
+    org = get_or_create(
+        session,
+        Organiz,
+        org_name="ООО Логистик",
+        defaults={"free_mesto": 5, "free_mesto_limit": 5},
+    )
     mark = get_or_create(session, MarkAuto, mark_name="Hyundai")
     model = get_or_create(session, ModelAuto, model_name="Porter", id_mark=mark.id_mark)
     abonent = get_or_create(session, Abonent,

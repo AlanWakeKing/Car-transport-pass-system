@@ -491,7 +491,7 @@ def download_all_orgs_report_pdf(
         items.append(
             {
                 "org_name": org.org_name,
-                "free_mesto": org.free_mesto or 0,
+                "free_mesto": org.free_mesto_limit if org.free_mesto_limit is not None else (org.free_mesto or 0),
                 "permanent_count": len(propusks),
                 "propusks": propusks
             }
@@ -535,7 +535,7 @@ def download_org_report_pdf(
     template_data = report_template.data_json if report_template else None
     pdf_buffer = generate_org_report(
         org_name=org.org_name,
-        free_mesto=org.free_mesto or 0,
+        free_mesto=org.free_mesto_limit if org.free_mesto_limit is not None else (org.free_mesto or 0),
         permanent_count=len(propusks),
         propusks=propusks,
         template_data=template_data

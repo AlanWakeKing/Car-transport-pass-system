@@ -75,6 +75,7 @@ class Organiz(Base):
     id_org = Column(Integer, primary_key=True, index=True)
     org_name = Column(String(200), nullable=False, unique=True)
     free_mesto = Column(Integer, default=0)  # Гостевые места
+    free_mesto_limit = Column(Integer, default=0)  # Лимит гостевых мест
     comment = Column(Text)  # Комментарий
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -229,11 +230,15 @@ class TemporaryPass(Base):
     revoked_by = Column(Integer, ForeignKey("users.id"))
     entered_at = Column(DateTime(timezone=True))
     exited_at = Column(DateTime(timezone=True))
+    entered_by = Column(Integer, ForeignKey("users.id"))
+    exited_by = Column(Integer, ForeignKey("users.id"))
     comment = Column(Text)
 
     organization = relationship("Organiz")
     creator = relationship("User", foreign_keys=[created_by])
     revoker = relationship("User", foreign_keys=[revoked_by])
+    enterer = relationship("User", foreign_keys=[entered_by])
+    exiter = relationship("User", foreign_keys=[exited_by])
 
     @property
     def status(self):

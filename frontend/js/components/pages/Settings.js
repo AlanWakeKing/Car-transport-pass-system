@@ -38,15 +38,14 @@ const TEMP_PASS_FIELDS = [
 
 
 const TEMP_REPORT_FIELDS = [
-  { key: "org_name", label: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f" },
-  { key: "user_name", label: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c" },
   { key: "report_date", label: "\u0414\u0430\u0442\u0430 \u043e\u0442\u0447\u0435\u0442\u0430" },
+  { key: "creator_name", label: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c (\u0441\u043e\u0437\u0434\u0430\u043b)" },
+  { key: "entered_by_name", label: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c (\u0437\u0430\u0435\u0437\u0434)" },
+  { key: "exited_by_name", label: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c (\u0432\u044b\u0435\u0437\u0434)" },
   { key: "gos_id", label: "\u0413\u043e\u0441\u043d\u043e\u043c\u0435\u0440" },
-  { key: "phone", label: "\u0422\u0435\u043b\u0435\u0444\u043e\u043d" },
-  { key: "entered_at", label: "\u0414\u0430\u0442\u0430 \u0437\u0430\u0435\u0437\u0434\u0430" },
-  { key: "exited_at", label: "\u0414\u0430\u0442\u0430 \u0432\u044b\u0435\u0437\u0434\u0430" },
-  { key: "created_at", label: "\u0412\u0440\u0435\u043c\u044f \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0438\u044f" },
-  { key: "status", label: "\u0421\u0442\u0430\u0442\u0443\u0441" }
+  { key: "org_name", label: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f" },
+  { key: "entered_at", label: "\u0412\u0440\u0435\u043c\u044f \u0437\u0430\u0435\u0437\u0434\u0430" },
+  { key: "exited_at", label: "\u0412\u0440\u0435\u043c\u044f \u0432\u044b\u0435\u0437\u0434\u0430" }
 ];
 
 const DEFAULT_PROPUSK_TEMPLATE = {
@@ -144,61 +143,99 @@ const DEFAULT_TEMP_REPORT_TEMPLATE = {
       type: "text",
       x: 6,
       y: 42,
-      width: 12,
+      width: 10,
       height: 5,
       text: "ID",
       font_size: 7
     },
     {
-      id: "tr_th_user",
+      id: "tr_th_user_create",
       type: "text",
-      x: 18,
+      x: 16,
       y: 42,
-      width: 28,
+      width: 30,
       height: 5,
-      text: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c",
+      text: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c (\u0441\u043e\u0437\u0434\u0430\u043b)",
       font_size: 7
     },
     {
-      id: "tr_th_org",
+      id: "tr_th_user_enter",
       type: "text",
-      x: 45,
+      x: 46,
       y: 42,
-      width: 40,
+      width: 30,
       height: 5,
-      text: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
+      text: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c (\u0437\u0430\u0435\u0437\u0434)",
+      font_size: 7
+    },
+    {
+      id: "tr_th_user_exit",
+      type: "text",
+      x: 76,
+      y: 42,
+      width: 30,
+      height: 5,
+      text: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c (\u0432\u044b\u0435\u0437\u0434)",
       font_size: 7
     },
     {
       id: "tr_th_gos",
       type: "text",
-      x: 100,
+      x: 106,
       y: 42,
-      width: 35,
+      width: 28,
       height: 5,
       text: "\u0413\u043e\u0441\u043d\u043e\u043c\u0435\u0440",
       font_size: 7
     },
     {
-      id: "tr_th_valid",
+      id: "tr_th_org",
       type: "text",
-      x: 155,
+      x: 134,
       y: 42,
-      width: 40,
+      width: 55,
       height: 5,
-      text: "\u0414\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442",
+      text: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
       font_size: 7
     },
     {
-      id: "tr_th_status",
+      id: "tr_th_entered_at",
       type: "text",
-      x: 220,
+      x: 189,
       y: 42,
-      width: 20,
+      width: 52,
       height: 5,
-      text: "\u0421\u0442\u0430\u0442\u0443\u0441",
+      text: "\u0412\u0440\u0435\u043c\u044f \u0437\u0430\u0435\u0437\u0434\u0430",
       font_size: 7
-    }
+    },
+    {
+      id: "tr_th_exited_at",
+      type: "text",
+      x: 241,
+      y: 42,
+      width: 52,
+      height: 5,
+      text: "\u0412\u0440\u0435\u043c\u044f \u0432\u044b\u0435\u0437\u0434\u0430",
+      font_size: 7
+    },
+    {
+      id: "tr_line_header_bottom",
+      type: "rect",
+      x: 5,
+      y: 47,
+      width: 287,
+      height: 0.3,
+      stroke: "#2f2f2f",
+      stroke_width: 1,
+      fill: ""
+    },
+    { "id": "tr_col_line_1", "type": "rect", "x": 15, "y": 40, "width": 0.3, "height": 150, "stroke": "#2f2f2f", "stroke_width": 1, "fill": "" },
+    { "id": "tr_col_line_2", "type": "rect", "x": 45, "y": 40, "width": 0.3, "height": 150, "stroke": "#2f2f2f", "stroke_width": 1, "fill": "" },
+    { "id": "tr_col_line_3", "type": "rect", "x": 75, "y": 40, "width": 0.3, "height": 150, "stroke": "#2f2f2f", "stroke_width": 1, "fill": "" },
+    { "id": "tr_col_line_4", "type": "rect", "x": 105, "y": 40, "width": 0.3, "height": 150, "stroke": "#2f2f2f", "stroke_width": 1, "fill": "" },
+    { "id": "tr_col_line_5", "type": "rect", "x": 133, "y": 40, "width": 0.3, "height": 150, "stroke": "#2f2f2f", "stroke_width": 1, "fill": "" },
+    { "id": "tr_col_line_6", "type": "rect", "x": 188, "y": 40, "width": 0.3, "height": 150, "stroke": "#2f2f2f", "stroke_width": 1, "fill": "" },
+    { "id": "tr_col_line_7", "type": "rect", "x": 240, "y": 40, "width": 0.3, "height": 150, "stroke": "#2f2f2f", "stroke_width": 1, "fill": "" }
   ]
 };
 

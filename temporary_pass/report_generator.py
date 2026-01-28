@@ -97,6 +97,15 @@ class TemporaryPassReportGenerator:
                 return ""
             return value if len(value) <= max_len else value[: max_len - 3] + "..."
 
+        def _get_header_bottom_mm():
+            if not template_data:
+                return None
+            elements = template_data.get("elements", [])
+            for el in elements:
+                if el.get("id") == "tr_line_header_bottom":
+                    return float(el.get("y", 0) or 0)
+            return None
+
         def draw_header():
             c.setFont(font_bold, 12)
             c.drawString(
@@ -110,18 +119,28 @@ class TemporaryPassReportGenerator:
             c.setFont(font_bold, 8)
             y = height - margin - 8 * mm
             c.drawString(margin, y, "ID")
-            c.drawString(margin + 12 * mm, y, "\u0413\u043e\u0441\u043d\u043e\u043c\u0435\u0440")
-            c.drawString(margin + 45 * mm, y, "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f")
-            c.drawString(margin + 100 * mm, y, "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c")
-            c.drawString(margin + 155 * mm, y, "\u0414\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442")
-            c.drawString(margin + 220 * mm, y, "\u0421\u0442\u0430\u0442\u0443\u0441")
+            c.drawString(margin + 10 * mm, y, "\u0421\u043e\u0437\u0434\u0430\u043b")
+            c.drawString(margin + 40 * mm, y, "\u0417\u0430\u0435\u0437\u0434")
+            c.drawString(margin + 70 * mm, y, "\u0412\u044b\u0435\u0437\u0434")
+            c.drawString(margin + 100 * mm, y, "\u0413\u043e\u0441\u043d\u043e\u043c\u0435\u0440")
+            c.drawString(margin + 128 * mm, y, "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f")
+            c.drawString(margin + 183 * mm, y, "\u0412\u0440\u0435\u043c\u044f \u0437\u0430\u0435\u0437\u0434\u0430")
+            c.drawString(margin + 235 * mm, y, "\u0412\u0440\u0435\u043c\u044f \u0432\u044b\u0435\u0437\u0434\u0430")
 
         if template_data:
             _draw_template_elements()
         else:
             draw_header()
-        c.setFont(font_regular, 8)
-        y = height - (table_y * 1.0) - 6 * mm if template_data else start_y
+        row_font_size = 7 if template_data else 8
+        c.setFont(font_regular, row_font_size)
+        header_bottom_mm = _get_header_bottom_mm()
+        row_offset_x_mm = float(meta.get("row_offset_x_mm", 5))
+        row_offset_y_mm = float(meta.get("row_offset_y_mm", 5))
+        if template_data and header_bottom_mm:
+            row_text_offset_mm = max(2.5, float(meta.get("row_text_offset_mm", 2.5)))
+            y = height - (header_bottom_mm + row_text_offset_mm + row_offset_y_mm) * mm
+        else:
+            y = height - (table_y * 1.0) - 6 * mm if template_data else start_y
         for group in groups:
             org_name = group.get("org_name") or "\u041d\u0435\u0442 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438"
             if y < margin + 20 * mm:
@@ -137,23 +156,33 @@ class TemporaryPassReportGenerator:
                     c.setFont(font_regular, 8)
                     y = start_y
 
-                valid_from = item.valid_from.astimezone().strftime("%d.%m.%Y %H:%M") if item.valid_from else ""
-                valid_until = item.valid_until.astimezone().strftime("%d.%m.%Y %H:%M") if item.valid_until else ""
-                valid_period = f"{valid_from} - {valid_until}".strip(" -")
-                status = "\u0410\u043d\u043d\u0443\u043b\u0438\u0440\u043e\u0432\u0430\u043d" if item.revoked_at else "\u0410\u043a\u0442\u0438\u0432\u0435\u043d"
+                entered_at = item.entered_at.astimezone().strftime("%d.%m.%Y %H:%M") if item.entered_at else ""
+                exited_at = item.exited_at.astimezone().strftime("%d.%m.%Y %H:%M") if item.exited_at else ""
                 creator_name = ""
                 if getattr(item, "creator", None) and item.creator.full_name:
                     creator_name = item.creator.full_name
                 elif getattr(item, "created_by", None):
                     creator_name = str(item.created_by)
+                enter_name = ""
+                if getattr(item, "enterer", None) and item.enterer.full_name:
+                    enter_name = item.enterer.full_name
+                elif getattr(item, "entered_by", None):
+                    enter_name = str(item.entered_by)
+                exit_name = ""
+                if getattr(item, "exiter", None) and item.exiter.full_name:
+                    exit_name = item.exiter.full_name
+                elif getattr(item, "exited_by", None):
+                    exit_name = str(item.exited_by)
 
-                base_x = table_x if template_data else margin
+                base_x = (table_x + row_offset_x_mm * mm) if template_data else margin
                 c.drawString(base_x, y, str(item.id))
-                c.drawString(base_x + 12 * mm, y, _truncate(creator_name, 12))
-                c.drawString(base_x + 45 * mm, y, _truncate(org_name, 28))
-                c.drawString(base_x + 100 * mm, y, _truncate(item.gos_id or "", 22))
-                c.drawString(base_x + 155 * mm, y, _truncate(valid_period, 28))
-                c.drawString(base_x + 220 * mm, y, status)
+                c.drawString(base_x + 10 * mm, y, _truncate(creator_name, 12))
+                c.drawString(base_x + 40 * mm, y, _truncate(enter_name, 12))
+                c.drawString(base_x + 70 * mm, y, _truncate(exit_name, 12))
+                c.drawString(base_x + 100 * mm, y, _truncate(item.gos_id or "", 16))
+                c.drawString(base_x + 128 * mm, y, _truncate(org_name, 24))
+                c.drawString(base_x + 183 * mm, y, _truncate(entered_at, 16))
+                c.drawString(base_x + 235 * mm, y, _truncate(exited_at, 16))
                 y -= row_height
 
         c.save()

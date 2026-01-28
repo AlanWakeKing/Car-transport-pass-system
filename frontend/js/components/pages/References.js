@@ -89,7 +89,8 @@ export class ReferencesPage {
                 <thead>
                   <tr>
                     <th>Название</th>
-                    <th>Свободных мест</th>
+                    <th>Гостевые места</th>
+                    <th>Свободные места</th>
                     <th>Комментарий</th>
                     <th>ID</th>
                     <th>Действия</th>
@@ -302,7 +303,7 @@ export class ReferencesPage {
     if (orgTbody) {
       orgTbody.innerHTML = this.state.orgs.length
         ? this.state.orgs.map((o) => this.orgRow(o)).join("")
-        : `<tr><td colspan="5"><div class="empty">Нет организаций</div></td></tr>`;
+        : `<tr><td colspan="6"><div class="empty">Нет организаций</div></td></tr>`;
     }
 
     if (markTbody) {
@@ -354,9 +355,11 @@ export class ReferencesPage {
   }
 
   orgRow(org) {
+    const limit = org.free_mesto_limit ?? org.free_mesto ?? 0;
     return `
       <tr>
         <td>${org.org_name}</td>
+        <td>${limit}</td>
         <td>${org.free_mesto ?? 0}</td>
         <td>${org.comment || "-"}</td>
         <td>${org.id_org}</td>
@@ -432,8 +435,12 @@ export class ReferencesPage {
         <input class="md-input" name="org_name" value="${org?.org_name || ""}" required>
       </div>
       <div class="md-field">
-        <label>Свободных мест</label>
-        <input class="md-input" name="free_mesto" type="number" value="${org?.free_mesto ?? 0}">
+        <label>Гостевые места</label>
+        <input class="md-input" name="free_mesto_limit" type="number" value="${org?.free_mesto_limit ?? org?.free_mesto ?? 0}">
+      </div>
+      <div class="md-field">
+        <label>Свободные места</label>
+        <input class="md-input" name="free_mesto" type="number" value="${org?.free_mesto ?? org?.free_mesto_limit ?? 0}">
       </div>
       <div class="md-field">
         <label>Комментарий</label>
@@ -449,7 +456,12 @@ export class ReferencesPage {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
-      if (data.free_mesto) data.free_mesto = Number(data.free_mesto);
+      if (data.free_mesto !== undefined) {
+        data.free_mesto = data.free_mesto === "" ? 0 : Number(data.free_mesto);
+      }
+      if (data.free_mesto_limit !== undefined) {
+        data.free_mesto_limit = data.free_mesto_limit === "" ? 0 : Number(data.free_mesto_limit);
+      }
       try {
         if (isEdit) {
           await apiPatch(`${ENDPOINTS.references.organizations}/${org.id_org}`, data);

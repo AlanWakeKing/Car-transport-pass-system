@@ -15,6 +15,9 @@ from migrate_20260127_temporary_pass import MIGRATION_ID as TEMP_PASS_ID, migrat
 from migrate_20260127_temp_pass_events import MIGRATION_ID as TEMP_EVENTS_ID, migrate as migrate_temp_events
 from migrate_20260127_temp_pass_template import MIGRATION_ID as TEMP_TEMPLATE_ID, migrate as migrate_temp_template
 from migrate_20260127_temp_pass_report_template import MIGRATION_ID as TEMP_REPORT_TEMPLATE_ID, migrate as migrate_temp_report_template
+from migrate_20260128_free_mesto_limit import MIGRATION_ID as FREE_MESTO_LIMIT_ID, migrate as migrate_free_mesto_limit
+from migrate_20260128_temp_pass_entered_by import MIGRATION_ID as TEMP_PASS_ENTERED_BY_ID, migrate as migrate_temp_pass_entered_by
+from migrate_20260128_temp_pass_exited_by import MIGRATION_ID as TEMP_PASS_EXITED_BY_ID, migrate as migrate_temp_pass_exited_by
 
 
 MIGRATIONS = [
@@ -23,6 +26,9 @@ MIGRATIONS = [
     (TEMP_EVENTS_ID, migrate_temp_events),
     (TEMP_TEMPLATE_ID, migrate_temp_template),
     (TEMP_REPORT_TEMPLATE_ID, migrate_temp_report_template),
+    (TEMP_PASS_ENTERED_BY_ID, migrate_temp_pass_entered_by),
+    (TEMP_PASS_EXITED_BY_ID, migrate_temp_pass_exited_by),
+    (FREE_MESTO_LIMIT_ID, migrate_free_mesto_limit),
 ]
 
 

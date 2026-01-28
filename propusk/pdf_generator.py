@@ -231,8 +231,9 @@ class PropuskPDFGenerator:
         c.setFont(font_regular, 8)
         org = propusk.organization
         parking_text = "На стоянку"
-        if org and org.free_mesto:
-            parking_text = f"На стоянку (мест: {org.free_mesto})"
+        if org and (org.free_mesto_limit or org.free_mesto):
+            limit_value = org.free_mesto_limit if org.free_mesto_limit is not None else org.free_mesto
+            parking_text = f"На стоянку (мест: {limit_value})"
         c.drawString(margin + 15*mm, height - margin - 12*mm, parking_text)
         
         # Марка автомобиля

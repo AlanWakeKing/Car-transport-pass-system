@@ -54,8 +54,16 @@ def create_organization(
             detail="Организация с таким названием уже существует"
         )
     
+    data = org_data.dict()
+    if data.get("free_mesto") is None:
+        data["free_mesto"] = 0
+    if data.get("free_mesto_limit") is None:
+        data["free_mesto_limit"] = data.get("free_mesto") or 0
+    if data["free_mesto"] > data["free_mesto_limit"]:
+        data["free_mesto"] = data["free_mesto_limit"]
+
     def _insert_org() -> Organiz:
-        organization = Organiz(**org_data.dict())
+        organization = Organiz(**data)
         db.add(organization)
         db.commit()
         db.refresh(organization)
@@ -110,6 +118,19 @@ def update_organization(
         )
     
     update_data = org_data.dict(exclude_unset=True)
+    if "free_mesto" in update_data or "free_mesto_limit" in update_data:
+        limit = update_data.get("free_mesto_limit", org.free_mesto_limit)
+        free = update_data.get("free_mesto", org.free_mesto)
+        if limit is None:
+            limit = free or 0
+        if free is None:
+            free = 0
+        if free > limit:
+            free = limit
+        if free < 0:
+            free = 0
+        update_data["free_mesto_limit"] = limit
+        update_data["free_mesto"] = free
     for field, value in update_data.items():
         setattr(org, field, value)
     

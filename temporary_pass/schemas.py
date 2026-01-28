@@ -31,10 +31,13 @@ class TemporaryPassResponse(BaseModel):
     revoked_by: Optional[int] = None
     entered_at: Optional[datetime] = None
     exited_at: Optional[datetime] = None
+    entered_by: Optional[int] = None
+    exited_by: Optional[int] = None
     status: str
 
     org_name: Optional[str] = None
     creator_name: Optional[str] = None
+    exited_by_name: Optional[str] = None
 
     class Config:
         from_attributes = True
