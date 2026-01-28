@@ -183,6 +183,10 @@ class TemporaryPassReportGenerator:
                 c.drawString(base_x + 128 * mm, y, _truncate(org_name, 24))
                 c.drawString(base_x + 183 * mm, y, _truncate(entered_at, 16))
                 c.drawString(base_x + 235 * mm, y, _truncate(exited_at, 16))
+                if template_data:
+                    line_y = y - (row_height - 1 * mm)
+                    c.setLineWidth(0.4)
+                    c.line(table_x, line_y, table_x + table_w, line_y)
                 y -= row_height
 
         c.save()
