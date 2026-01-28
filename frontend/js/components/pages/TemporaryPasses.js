@@ -117,7 +117,8 @@ export class TemporaryPassesPage {
               <tr>
                 <th>Госномер</th>
                 <th>Компания</th>
-                <th>Действует</th>
+                <th>Время заезда</th>
+                <th>Время выезда</th>
                 <th>Телефон</th>
                 <th>Статус</th>
                 <th>Действия</th>
@@ -172,7 +173,7 @@ export class TemporaryPassesPage {
 
   renderRows(tbody) {
     if (!this.state.passes.length) {
-      tbody.innerHTML = `<tr><td colspan="6"><div class="empty">Временные пропуска не найдены</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty">Временные пропуска не найдены</div></td></tr>`;
       return;
     }
     tbody.innerHTML = this.state.passes
@@ -181,7 +182,8 @@ export class TemporaryPassesPage {
           <tr data-id="${p.id}">
             <td><strong>${p.gos_id}</strong><br><span class="tag">#${p.id}</span></td>
             <td>${p.org_name || "-"}</td>
-            <td>${this.formatDateTime(p.valid_from)} - ${this.formatDateTime(p.valid_until)}</td>
+            <td>${this.formatDateTime(p.entered_at)}</td>
+            <td>${this.formatDateTime(p.exited_at)}</td>
             <td>${p.phone || "-"}</td>
             <td>${renderStatusChip(p.status)}</td>
             <td>

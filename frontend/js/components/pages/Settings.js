@@ -629,18 +629,18 @@ export class SettingsPage {
         </div>
         <p class="hint">Отключение API блокирует все /api запросы, кроме входа и включения.</p>
       </div>
-            <div class="md-card section">
+      <div class="md-card section">
         <div class="md-toolbar">
           <div>
-            <p class="tag">???????'??????????</p>
-            <h3 style="margin:0;">?"?????'???? ?? /docs</h3>
+            <p class="tag">\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f</p>
+            <h3 style="margin:0;">\u0414\u043e\u0441\u0442\u0443\u043f \u043a /docs</h3>
           </div>
           <div class="pill-switch" id="docs-toggle">
-            <button data-enabled="true" class="${this.state.docs.enabled ? "active" : ""}">?'???></button>
-            <button data-enabled="false" class="${!this.state.docs.enabled ? "active" : ""}">?'?<???></button>
+            <button data-enabled="true" class="${this.state.docs.enabled ? "active" : ""}">\u0412\u043a\u043b</button>
+            <button data-enabled="false" class="${!this.state.docs.enabled ? "active" : ""}">\u0412\u044b\u043a\u043b</button>
           </div>
         </div>
-        <p class="hint">???'???>???????????? ???????<???????' Swagger/Redoc ?? OpenAPI ???:??????.</p>
+        <p class="hint">\u041e\u0442\u043a\u043b\u044e\u0447\u0430\u0435\u0442/\u0432\u043a\u043b\u044e\u0447\u0430\u0435\u0442 \u0440\u0430\u0437\u0434\u0435\u043b Swagger/Redoc \u0432 OpenAPI \u043f\u0440\u043e\u0435\u043a\u0442\u0435.</p>
       </div>
       <div class="md-card section">
         <div class="md-toolbar">

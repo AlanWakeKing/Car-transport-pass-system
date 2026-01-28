@@ -136,25 +136,40 @@ class TemporaryPassReportGenerator:
         header_bottom_mm = _get_header_bottom_mm()
         row_offset_x_mm = float(meta.get("row_offset_x_mm", 5))
         row_offset_y_mm = float(meta.get("row_offset_y_mm", 5))
+        row_text_offset_mm = max(2.5, float(meta.get("row_text_offset_mm", 2.5)))
         if template_data and header_bottom_mm:
-            row_text_offset_mm = max(2.5, float(meta.get("row_text_offset_mm", 2.5)))
-            y = height - (header_bottom_mm + row_text_offset_mm + row_offset_y_mm) * mm
+            first_row_top_mm = header_bottom_mm + row_offset_y_mm
         else:
-            y = height - (table_y * 1.0) - 6 * mm if template_data else start_y
+            first_row_top_mm = (table_y + 6) if template_data else (height / mm - start_y / mm)
+        row_index = 0
         for group in groups:
             org_name = group.get("org_name") or "\u041d\u0435\u0442 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438"
-            if y < margin + 20 * mm:
+            if template_data:
+                current_row_top = height - (first_row_top_mm * mm) - row_index * row_height
+            else:
+                current_row_top = y
+            if current_row_top < margin + 20 * mm:
                 c.showPage()
                 draw_header()
                 c.setFont(font_regular, 8)
-                y = start_y
+                if template_data and header_bottom_mm:
+                    row_index = 0
+                else:
+                    y = start_y
 
             for item in group.get("items", []):
-                if y < margin + 15 * mm:
+                if template_data:
+                    current_row_top = height - (first_row_top_mm * mm) - row_index * row_height
+                else:
+                    current_row_top = y
+                if current_row_top < margin + 15 * mm:
                     c.showPage()
                     draw_header()
                     c.setFont(font_regular, 8)
-                    y = start_y
+                    if template_data and header_bottom_mm:
+                        row_index = 0
+                    else:
+                        y = start_y
 
                 entered_at = item.entered_at.astimezone().strftime("%d.%m.%Y %H:%M") if item.entered_at else ""
                 exited_at = item.exited_at.astimezone().strftime("%d.%m.%Y %H:%M") if item.exited_at else ""
@@ -175,19 +190,23 @@ class TemporaryPassReportGenerator:
                     exit_name = str(item.exited_by)
 
                 base_x = (table_x + row_offset_x_mm * mm) if template_data else margin
-                c.drawString(base_x, y, str(item.id))
-                c.drawString(base_x + 10 * mm, y, _truncate(creator_name, 12))
-                c.drawString(base_x + 40 * mm, y, _truncate(enter_name, 12))
-                c.drawString(base_x + 70 * mm, y, _truncate(exit_name, 12))
-                c.drawString(base_x + 100 * mm, y, _truncate(item.gos_id or "", 16))
-                c.drawString(base_x + 128 * mm, y, _truncate(org_name, 24))
-                c.drawString(base_x + 183 * mm, y, _truncate(entered_at, 16))
-                c.drawString(base_x + 235 * mm, y, _truncate(exited_at, 16))
+                text_y = current_row_top - row_text_offset_mm * mm
+                c.drawString(base_x, text_y, str(item.id))
+                c.drawString(base_x + 10 * mm, text_y, _truncate(creator_name, 12))
+                c.drawString(base_x + 40 * mm, text_y, _truncate(enter_name, 12))
+                c.drawString(base_x + 70 * mm, text_y, _truncate(exit_name, 12))
+                c.drawString(base_x + 100 * mm, text_y, _truncate(item.gos_id or "", 16))
+                c.drawString(base_x + 128 * mm, text_y, _truncate(org_name, 24))
+                c.drawString(base_x + 183 * mm, text_y, _truncate(entered_at, 16))
+                c.drawString(base_x + 235 * mm, text_y, _truncate(exited_at, 16))
                 if template_data:
-                    line_y = y - (row_height - 1 * mm)
+                    line_y = current_row_top - row_height
                     c.setLineWidth(0.4)
                     c.line(table_x, line_y, table_x + table_w, line_y)
-                y -= row_height
+                if template_data and header_bottom_mm:
+                    row_index += 1
+                else:
+                    y -= row_height
 
         c.save()
         buffer.seek(0)
