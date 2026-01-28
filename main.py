@@ -17,6 +17,7 @@ from auth.router import router as auth_router
 from references.router import router as references_router
 from settings.router import router as settings_router
 from settings.service import get_api_enabled, get_docs_enabled
+from temporary_pass.router import router as temporary_pass_router
 
 
 # Lifespan для инициализации при старте
@@ -172,6 +173,7 @@ async def csrf_protect(request: Request, call_next):
 app.include_router(auth_router)
 app.include_router(references_router)
 app.include_router(settings_router)
+app.include_router(temporary_pass_router)
 
 # Импортируем роутер пропусков
 from propusk.router import router as propusk_router

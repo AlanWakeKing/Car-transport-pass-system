@@ -52,12 +52,28 @@ export function canDownload(user) {
   return hasPermission(user, "download_pdf");
 }
 
+export function canCreateTempPass(user) {
+  return hasPermission(user, "temp_create");
+}
+
+export function canDeleteTempPass(user) {
+  return hasPermission(user, "temp_delete");
+}
+
+export function canDownloadTempPass(user) {
+  return hasPermission(user, "temp_download");
+}
+
 export function canShowMenuPropusks(user) {
-  return hasMenuPermission(user, "menu_propusks") && hasPermission(user, "view");
+  return hasMenuPermission(user, "menu_propusks");
 }
 
 export function canShowMenuHome(user) {
   return hasMenuPermission(user, "menu_home");
+}
+
+export function canShowMenuTemporary(user) {
+  return hasMenuPermission(user, "menu_temporary");
 }
 
 export function canShowMenuReferences(user) {

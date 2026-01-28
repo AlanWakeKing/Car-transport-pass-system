@@ -22,11 +22,184 @@ const REPORT_FIELDS = [
   { key: "permanent_count", label: "Постоянные места" }
 ];
 
+
+
+const TEMP_PASS_FIELDS = [
+  { key: "user_name", label: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c" },
+  { key: "org_name", label: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f" },
+  { key: "gos_id", label: "\u0413\u043e\u0441\u043d\u043e\u043c\u0435\u0440" },
+  { key: "phone", label: "\u0422\u0435\u043b\u0435\u0444\u043e\u043d" },
+  { key: "comment", label: "\u041a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439" },
+  { key: "entered_at", label: "\u0414\u0430\u0442\u0430 \u0437\u0430\u0435\u0437\u0434\u0430" },
+  { key: "exited_at", label: "\u0414\u0430\u0442\u0430 \u0432\u044b\u0435\u0437\u0434\u0430" },
+  { key: "created_at", label: "\u0412\u0440\u0435\u043c\u044f \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0438\u044f" }
+];
+
+
+
+const TEMP_REPORT_FIELDS = [
+  { key: "org_name", label: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f" },
+  { key: "user_name", label: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c" },
+  { key: "report_date", label: "\u0414\u0430\u0442\u0430 \u043e\u0442\u0447\u0435\u0442\u0430" },
+  { key: "gos_id", label: "\u0413\u043e\u0441\u043d\u043e\u043c\u0435\u0440" },
+  { key: "phone", label: "\u0422\u0435\u043b\u0435\u0444\u043e\u043d" },
+  { key: "entered_at", label: "\u0414\u0430\u0442\u0430 \u0437\u0430\u0435\u0437\u0434\u0430" },
+  { key: "exited_at", label: "\u0414\u0430\u0442\u0430 \u0432\u044b\u0435\u0437\u0434\u0430" },
+  { key: "created_at", label: "\u0412\u0440\u0435\u043c\u044f \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0438\u044f" },
+  { key: "status", label: "\u0421\u0442\u0430\u0442\u0443\u0441" }
+];
+
 const DEFAULT_PROPUSK_TEMPLATE = {
   page: { width_mm: 100, height_mm: 90 },
   grid_mm: 2,
   meta: { year_mode: "release_date", year_value: "" },
   elements: []
+};
+
+
+
+const DEFAULT_TEMP_PASS_TEMPLATE = {
+  page: { width_mm: 90, height_mm: 50 },
+  grid_mm: 2,
+  meta: {},
+  elements: [
+    { id: "t_title", type: "text", x: 4, y: 4, width: 60, height: 6, text: "\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u043f\u0443\u0441\u043a", font_size: 10, bold: true },
+    { id: "t_user_label", type: "text", x: 4, y: 12, width: 18, height: 4, text: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c:", font_size: 7 },
+    { id: "t_user", type: "field", x: 24, y: 12, width: 60, height: 4, field: "user_name", font_size: 7 },
+    { id: "t_gos_label", type: "text", x: 4, y: 18, width: 18, height: 4, text: "\u0413\u043e\u0441\u043d\u043e\u043c\u0435\u0440:", font_size: 7 },
+    { id: "t_gos", type: "field", x: 24, y: 18, width: 40, height: 4, field: "gos_id", font_size: 8, bold: true },
+    { id: "t_phone_label", type: "text", x: 4, y: 24, width: 18, height: 4, text: "\u0422\u0435\u043b\u0435\u0444\u043e\u043d:", font_size: 7 },
+    { id: "t_phone", type: "field", x: 24, y: 24, width: 40, height: 4, field: "phone", font_size: 7 },
+    { id: "t_comment_label", type: "text", x: 4, y: 30, width: 18, height: 4, text: "\u041a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439:", font_size: 7 },
+    { id: "t_comment", type: "field", x: 24, y: 30, width: 60, height: 4, field: "comment", font_size: 7 },
+    { id: "t_enter_label", type: "text", x: 4, y: 36, width: 18, height: 4, text: "\u0417\u0430\u0435\u0437\u0434:", font_size: 7 },
+    { id: "t_enter", type: "field", x: 24, y: 36, width: 30, height: 4, field: "entered_at", font_size: 7 },
+    { id: "t_exit_label", type: "text", x: 4, y: 42, width: 18, height: 4, text: "\u0412\u044b\u0435\u0437\u0434:", font_size: 7 },
+    { id: "t_exit", type: "field", x: 24, y: 42, width: 30, height: 4, field: "exited_at", font_size: 7 },
+    { id: "t_created_label", type: "text", x: 4, y: 48, width: 18, height: 4, text: "\u0421\u043e\u0437\u0434\u0430\u043d:", font_size: 7 },
+    { id: "t_created", type: "field", x: 24, y: 48, width: 30, height: 4, field: "created_at", font_size: 7 }
+  ]
+};
+
+
+
+const DEFAULT_TEMP_REPORT_TEMPLATE = {
+  page: { width_mm: 297, height_mm: 210 },
+  grid_mm: 5,
+  meta: {
+    table_x_mm: 5,
+    table_y_mm: 40,
+    table_width_mm: 287,
+    table_height_mm: 150,
+    row_height_mm: 7
+  },
+  elements: [
+    {
+      id: "tr_header_text",
+      type: "text",
+      x: 6,
+      y: 6,
+      width: 120,
+      height: 6,
+      text: "\u041e\u0442\u0447\u0435\u0442 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0445 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u043e\u0432",
+      font_size: 12,
+      align: "left",
+      color: "#111827"
+    },
+    {
+      id: "tr_date_label",
+      type: "text",
+      x: 6,
+      y: 14,
+      width: 30,
+      height: 5,
+      text: "\u0414\u0430\u0442\u0430:",
+      font_size: 8,
+      align: "left"
+    },
+    {
+      id: "tr_date_value",
+      type: "field",
+      x: 20,
+      y: 14,
+      width: 50,
+      height: 5,
+      field: "report_date",
+      font_size: 8,
+      align: "left"
+    },
+    {
+      id: "tr_table_body",
+      type: "rect",
+      x: 5,
+      y: 40,
+      width: 287,
+      height: 150,
+      stroke: "#2f2f2f",
+      stroke_width: 1,
+      fill: ""
+    },
+    {
+      id: "tr_th_id",
+      type: "text",
+      x: 6,
+      y: 42,
+      width: 12,
+      height: 5,
+      text: "ID",
+      font_size: 7
+    },
+    {
+      id: "tr_th_user",
+      type: "text",
+      x: 18,
+      y: 42,
+      width: 28,
+      height: 5,
+      text: "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c",
+      font_size: 7
+    },
+    {
+      id: "tr_th_org",
+      type: "text",
+      x: 45,
+      y: 42,
+      width: 40,
+      height: 5,
+      text: "\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f",
+      font_size: 7
+    },
+    {
+      id: "tr_th_gos",
+      type: "text",
+      x: 100,
+      y: 42,
+      width: 35,
+      height: 5,
+      text: "\u0413\u043e\u0441\u043d\u043e\u043c\u0435\u0440",
+      font_size: 7
+    },
+    {
+      id: "tr_th_valid",
+      type: "text",
+      x: 155,
+      y: 42,
+      width: 40,
+      height: 5,
+      text: "\u0414\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442",
+      font_size: 7
+    },
+    {
+      id: "tr_th_status",
+      type: "text",
+      x: 220,
+      y: 42,
+      width: 20,
+      height: 5,
+      text: "\u0421\u0442\u0430\u0442\u0443\u0441",
+      font_size: 7
+    }
+  ]
 };
 
 const DEFAULT_REPORT_TEMPLATE = {
@@ -229,26 +402,49 @@ const DEFAULT_REPORT_TEMPLATE = {
 export class SettingsPage {
   constructor(context) {
     this.context = context;
-    this.scale = { propusk: 4, report: 2 };
+    this.scale = { propusk: 4, report: 2, temp_pass: 4, temp_report: 2 };
     this.state = {
       tab: "report",
       api: { enabled: true, loaded: false },
       docs: { enabled: true, loaded: false },
+      ui: { showPropuskPagination: Boolean(this.context.state.ui?.showPropuskPagination) },
       templates: {
         propusk: { ...DEFAULT_PROPUSK_TEMPLATE },
-        report: { ...DEFAULT_REPORT_TEMPLATE }
+        report: { ...DEFAULT_REPORT_TEMPLATE },
+        temp_pass: { ...DEFAULT_TEMP_PASS_TEMPLATE },
+        temp_report: { ...DEFAULT_TEMP_REPORT_TEMPLATE }
       },
-      versions: { propusk: [], report: [] },
-      selected: { propusk: null, report: null },
-      loaded: { propusk: false, report: false }
+      versions: { propusk: [], report: [], temp_pass: [], temp_report: [] },
+      selected: { propusk: null, report: null, temp_pass: null, temp_report: null },
+      loaded: { propusk: false, report: false, temp_pass: false, temp_report: false }
     };
   }
 
   async loadTab(tab) {
     const isPropusk = tab === "propusk";
-    const activeEndpoint = isPropusk ? ENDPOINTS.settings.activeTemplate : ENDPOINTS.settings.reportActiveTemplate;
-    const versionsEndpoint = isPropusk ? ENDPOINTS.settings.templateVersions : ENDPOINTS.settings.reportTemplateVersions;
-    const baseTemplate = isPropusk ? DEFAULT_PROPUSK_TEMPLATE : DEFAULT_REPORT_TEMPLATE;
+    const isTempPass = tab === "temp_pass";
+    const isTempReport = tab === "temp_report";
+    const activeEndpoint = isPropusk
+      ? ENDPOINTS.settings.activeTemplate
+      : isTempPass
+        ? ENDPOINTS.settings.tempPassActiveTemplate
+        : isTempReport
+          ? ENDPOINTS.settings.tempPassReportActiveTemplate
+          : ENDPOINTS.settings.reportActiveTemplate;
+    const versionsEndpoint = isPropusk
+      ? ENDPOINTS.settings.templateVersions
+      : isTempPass
+        ? ENDPOINTS.settings.tempPassTemplateVersions
+        : isTempReport
+          ? ENDPOINTS.settings.tempPassReportTemplateVersions
+          : ENDPOINTS.settings.reportTemplateVersions;
+    const baseTemplate = isPropusk
+      ? DEFAULT_PROPUSK_TEMPLATE
+      : isTempPass
+        ? DEFAULT_TEMP_PASS_TEMPLATE
+        : isTempReport
+          ? DEFAULT_TEMP_REPORT_TEMPLATE
+          : DEFAULT_REPORT_TEMPLATE;
 
     try {
       const [active, versions] = await Promise.all([
@@ -257,7 +453,7 @@ export class SettingsPage {
       ]);
 
       if (active?.data) {
-        this.state.templates[tab] = this.normalizeTemplate(active.data, baseTemplate, isPropusk);
+        this.state.templates[tab] = this.normalizeTemplate(active.data, baseTemplate, isPropusk, isPropusk || isTempPass);
       }
       this.state.versions[tab] = versions || [];
       this.state.loaded[tab] = true;
@@ -292,7 +488,7 @@ export class SettingsPage {
     return this.state.templates[this.state.tab];
   }
 
-  normalizeTemplate(data, baseTemplate, isPropusk) {
+  normalizeTemplate(data, baseTemplate, isPropusk, isSmallPass = false) {
     const merged = { ...baseTemplate, ...data };
     if (isPropusk) {
       merged.meta = { ...DEFAULT_PROPUSK_TEMPLATE.meta, ...(data.meta || {}) };
@@ -300,10 +496,10 @@ export class SettingsPage {
     const elements = Array.isArray(merged.elements)
       ? merged.elements.filter((el) => this.isValidElement(el))
       : [];
-    const minElements = isPropusk ? 1 : 5;
+    const minElements = isSmallPass ? 1 : 5;
     const usable = elements.length >= minElements ? elements : [];
     merged.elements = usable.length ? usable : baseTemplate.elements;
-    if (!isPropusk) {
+    if (!isSmallPass) {
       const page = merged.page || {};
       if (!page.width_mm || !page.height_mm || page.width_mm < 200 || page.height_mm < 150) {
         merged.page = baseTemplate.page;
@@ -320,7 +516,10 @@ export class SettingsPage {
   }
 
   getScale() {
-    return this.state.tab === "propusk" ? this.scale.propusk : this.scale.report;
+    if (this.state.tab === "propusk") return this.scale.propusk;
+    if (this.state.tab === "temp_pass") return this.scale.temp_pass;
+    if (this.state.tab === "temp_report") return this.scale.temp_report;
+    return this.scale.report;
   }
 
   setCurrentTemplate(data) {
@@ -336,7 +535,10 @@ export class SettingsPage {
   }
 
   getFieldOptions() {
-    return this.state.tab === "propusk" ? PROPUSK_FIELDS : REPORT_FIELDS;
+    if (this.state.tab === "propusk") return PROPUSK_FIELDS;
+    if (this.state.tab === "temp_pass") return TEMP_PASS_FIELDS;
+    if (this.state.tab === "temp_report") return TEMP_REPORT_FIELDS;
+    return REPORT_FIELDS;
   }
 
   getEndpoints() {
@@ -344,6 +546,18 @@ export class SettingsPage {
       return {
         save: ENDPOINTS.settings.template,
         versions: ENDPOINTS.settings.templateVersions
+      };
+    }
+    if (this.state.tab === "temp_pass") {
+      return {
+        save: ENDPOINTS.settings.tempPassTemplate,
+        versions: ENDPOINTS.settings.tempPassTemplateVersions
+      };
+    }
+    if (this.state.tab === "temp_report") {
+      return {
+        save: ENDPOINTS.settings.tempPassReportTemplate,
+        versions: ENDPOINTS.settings.tempPassReportTemplateVersions
       };
     }
     return {
@@ -378,20 +592,33 @@ export class SettingsPage {
         </div>
         <p class="hint">Отключение API блокирует все /api запросы, кроме входа и включения.</p>
       </div>
+            <div class="md-card section">
+        <div class="md-toolbar">
+          <div>
+            <p class="tag">???????'??????????</p>
+            <h3 style="margin:0;">?"?????'???? ?? /docs</h3>
+          </div>
+          <div class="pill-switch" id="docs-toggle">
+            <button data-enabled="true" class="${this.state.docs.enabled ? "active" : ""}">?'???></button>
+            <button data-enabled="false" class="${!this.state.docs.enabled ? "active" : ""}">?'?<???></button>
+          </div>
+        </div>
+        <p class="hint">???'???>???????????? ???????<???????' Swagger/Redoc ?? OpenAPI ???:??????.</p>
+      </div>
       <div class="md-card section">
         <div class="md-toolbar">
           <div>
-            <p class="tag">Настройки</p>
-            <h3 style="margin:0;">Доступ к /docs</h3>
+            <p class="tag">Интерфейс</p>
+            <h3 style="margin:0;">Пагинация в пропусках</h3>
           </div>
-          <div class="pill-switch" id="docs-toggle">
-            <button data-enabled="true" class="${this.state.docs.enabled ? "active" : ""}">Вкл</button>
-            <button data-enabled="false" class="${!this.state.docs.enabled ? "active" : ""}">Выкл</button>
+          <div class="pill-switch" id="propusk-pagination-toggle">
+            <button data-enabled="true" class="${this.state.ui.showPropuskPagination ? "active" : ""}">Да</button>
+            <button data-enabled="false" class="${!this.state.ui.showPropuskPagination ? "active" : ""}">Нет</button>
           </div>
         </div>
-        <p class="hint">Отключение скрывает Swagger/Redoc и OpenAPI схему.</p>
+        <p class="hint">Показывает блок пагинации в разделе "Пропуска".</p>
       </div>
-      <div class="md-card section">
+<div class="md-card section">
         <div class="md-toolbar">
           <div>
             <p class="tag">Настройки</p>
@@ -405,6 +632,8 @@ export class SettingsPage {
         <div class="tabs" id="settings-tabs">
           <button class="tab ${this.state.tab === "report" ? "active" : ""}" data-tab="report">Отчет по организациям</button>
           <button class="tab ${this.state.tab === "propusk" ? "active" : ""}" data-tab="propusk">Пропуска</button>
+          <button class="tab ${this.state.tab === "temp_pass" ? "active" : ""}" data-tab="temp_pass">\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u043f\u0443\u0441\u043a</button>
+          <button class="tab ${this.state.tab === "temp_report" ? "active" : ""}" data-tab="temp_report">\u041e\u0442\u0447\u0435\u0442 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0445</button>
         </div>
         <div class="template-layout">
           <div class="md-card template-editor">
@@ -618,6 +847,17 @@ export class SettingsPage {
       }
     });
 
+    node.querySelector("#propusk-pagination-toggle")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const enabled = btn.dataset.enabled === "true";
+      if (enabled === this.state.ui.showPropuskPagination) return;
+      this.state.ui.showPropuskPagination = enabled;
+      this.context.setPropuskPaginationVisibility(enabled);
+      const replacement = await this.render();
+      node.replaceWith(replacement);
+    });
+
     const canvas = node.querySelector("#template-canvas");
     const panel = node.querySelector("#element-panel");
 
@@ -730,6 +970,10 @@ export class SettingsPage {
     node.querySelector("#reset-template")?.addEventListener("click", () => {
       if (this.state.tab === "propusk") {
         this.state.templates.propusk = { ...DEFAULT_PROPUSK_TEMPLATE, elements: [] };
+      } else if (this.state.tab === "temp_pass") {
+        this.state.templates.temp_pass = { ...DEFAULT_TEMP_PASS_TEMPLATE, elements: [] };
+      } else if (this.state.tab === "temp_report") {
+        this.state.templates.temp_report = { ...DEFAULT_TEMP_REPORT_TEMPLATE, elements: [] };
       } else {
         this.state.templates.report = { ...DEFAULT_REPORT_TEMPLATE, elements: [] };
       }
@@ -743,8 +987,19 @@ export class SettingsPage {
       const id = Number(select?.value);
       const template = this.state.versions[this.state.tab].find((v) => v.id === id);
       if (template?.data) {
-        const base = this.state.tab === "propusk" ? DEFAULT_PROPUSK_TEMPLATE : DEFAULT_REPORT_TEMPLATE;
-        const merged = this.normalizeTemplate(template.data, base, this.state.tab === "propusk");
+        const base = this.state.tab === "propusk"
+          ? DEFAULT_PROPUSK_TEMPLATE
+          : this.state.tab === "temp_pass"
+            ? DEFAULT_TEMP_PASS_TEMPLATE
+            : this.state.tab === "temp_report"
+              ? DEFAULT_TEMP_REPORT_TEMPLATE
+              : DEFAULT_REPORT_TEMPLATE;
+        const merged = this.normalizeTemplate(
+          template.data,
+          base,
+          this.state.tab === "propusk",
+          this.state.tab === "propusk" || this.state.tab === "temp_pass"
+        );
         this.setCurrentTemplate(merged);
         this.setCurrentSelected(null);
         this.renderCanvas(canvas);

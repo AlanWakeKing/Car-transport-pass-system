@@ -1,4 +1,4 @@
-﻿import { canManageUsers, canShowMenuHome, canShowMenuPropusks, canShowMenuReferences, canShowMenuPrint, canShowMenuReports, canShowMenuUsers, canShowMenuSettings } from "../../utils/permissions.js";
+﻿import { canManageUsers, canShowMenuHome, canShowMenuPropusks, canShowMenuTemporary, canShowMenuReferences, canShowMenuPrint, canShowMenuReports, canShowMenuUsers, canShowMenuSettings } from "../../utils/permissions.js";
 
 export class AppShell {
   constructor(root, { onNavigate, onNavigateWithFilters, onLogout }) {
@@ -22,6 +22,7 @@ export class AppShell {
           </div>
           <div class="menu" id="app-menu">
             ${canShowMenuHome(user) ? this.menuItem("dashboard", "space_dashboard", "Главная") : ""}
+            ${canShowMenuTemporary(user) ? this.menuItem("temporary", "schedule", "Временные пропуска") : ""}
             ${canShowMenuPropusks(user) ? this.menuItem("propusks", "directions_car", "Пропуска") : ""}
             ${canShowMenuReferences(user) ? this.menuItem("references", "storage", "Справочники") : ""}
             ${canShowMenuPrint(user) ? this.menuItem("print", "print", "В печать") : ""}

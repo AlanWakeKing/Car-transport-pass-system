@@ -213,7 +213,79 @@ class NotificationLog(Base):
     status = Column(String(20), nullable=False)  # sent, failed
     error_message = Column(Text)
 
-# 10. ??????? PDF-?????????
+# 10. Таблица временных пропусков
+class TemporaryPass(Base):
+    __tablename__ = "temporary_pass"
+
+    id = Column(Integer, primary_key=True, index=True)
+    gos_id = Column(String(20), nullable=False, index=True)
+    id_org = Column(Integer, ForeignKey("organiz.id_org"), nullable=False, index=True)
+    phone = Column(String(30))
+    valid_from = Column(DateTime(timezone=True), nullable=False)
+    valid_until = Column(DateTime(timezone=True), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    revoked_at = Column(DateTime(timezone=True))
+    revoked_by = Column(Integer, ForeignKey("users.id"))
+    entered_at = Column(DateTime(timezone=True))
+    exited_at = Column(DateTime(timezone=True))
+    comment = Column(Text)
+
+    organization = relationship("Organiz")
+    creator = relationship("User", foreign_keys=[created_by])
+    revoker = relationship("User", foreign_keys=[revoked_by])
+
+    @property
+    def status(self):
+        if self.revoked_at:
+            return "revoked"
+        if self.valid_until:
+            now = datetime.now(tz=self.valid_until.tzinfo) if self.valid_until.tzinfo else datetime.now()
+            if now > self.valid_until:
+                return "expired"
+        return "active"
+
+# 11. Temporary pass PDF templates
+class TemporaryPassTemplate(Base):
+    __tablename__ = "temporary_pass_template"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version = Column(Integer, nullable=False)
+    data = Column(Text, nullable=False)  # JSON
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    creator = relationship("User")
+
+    @property
+    def data_json(self):
+        try:
+            return json.loads(self.data or "{}")
+        except Exception:
+            return {}
+
+# 12. Temporary pass report templates
+class TemporaryPassReportTemplate(Base):
+    __tablename__ = "temporary_pass_report_template"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version = Column(Integer, nullable=False)
+    data = Column(Text, nullable=False)  # JSON
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    creator = relationship("User")
+
+    @property
+    def data_json(self):
+        try:
+            return json.loads(self.data or "{}")
+        except Exception:
+            return {}
+
+# 13. ??????? PDF-?????????
 class PropuskTemplate(Base):
     __tablename__ = "propusk_template"
 
@@ -234,7 +306,7 @@ class PropuskTemplate(Base):
             return {}
 
 
-# 11. Report PDF templates
+# 12. Report PDF templates
 class ReportTemplate(Base):
     __tablename__ = "report_template"
 
@@ -255,7 +327,7 @@ class ReportTemplate(Base):
             return {}
 
 
-# 12. Application settings (key/value)
+# 13. Application settings (key/value)
 class AppSetting(Base):
     __tablename__ = "app_settings"
 

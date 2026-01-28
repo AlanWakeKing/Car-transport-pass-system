@@ -20,34 +20,47 @@ export class PropusksPage {
     this.context = context;
     this.state = {
       propusks: [],
-      filters: { search: "" },
+      filters: { status: "", id_org: "", id_fio: "", date_to: "" },
+      sort: { key: "", dir: "asc" },
       references: null,
-      pagination: { page: 1, limit: 50, total: 0 }
+      pagination: { page: 1, limit: 50, total: 0 },
+      loadingMore: false,
+      hasMore: true,
+      usePagination: Boolean(this.context.state.ui?.showPropuskPagination)
     };
     const storedPagination = this.context.state.ui?.propuskPagination;
-    if (storedPagination) {
+    if (storedPagination && this.state.usePagination) {
       this.state.pagination.page = storedPagination.page || 1;
-      this.state.pagination.limit = storedPagination.limit || 50;
+    }
+    const storedFilters = this.context.state.ui?.propuskFilters;
+    if (storedFilters) {
+      this.state.filters = { ...this.state.filters, ...storedFilters };
     }
     this.searchTimer = null;
+    this.scrollObserver = null;
+    this.host = null;
   }
 
-  async loadData() {
+  async loadData({ append = false } = {}) {
     const { filters } = this.state;
     try {
       const { page, limit } = this.state.pagination;
       const skip = (page - 1) * limit;
       const params = { limit, skip };
-      if (filters.search) params.search = filters.search;
       if (filters.status) params.status = filters.status;
+      if (filters.id_org) params.id_org = filters.id_org;
+      if (filters.id_fio) params.id_fio = filters.id_fio;
+      if (filters.date_to) params.date_to = filters.date_to;
       const response = await apiGet(ENDPOINTS.propusksPaged, params);
-      this.state.propusks = response.items || [];
+      const items = response.items || [];
+      this.state.propusks = append ? [...this.state.propusks, ...items] : items;
       this.state.pagination.total = response.total || 0;
+      this.state.hasMore = this.state.propusks.length < this.state.pagination.total;
       this.context.setPropuskPagination({
         page: this.state.pagination.page,
         limit: this.state.pagination.limit
       });
-      if (!this.state.propusks.length && this.state.pagination.total && page > 1) {
+      if (!append && !this.state.propusks.length && this.state.pagination.total && page > 1) {
         const lastPage = Math.max(1, Math.ceil(this.state.pagination.total / limit));
         if (lastPage !== page) {
           this.state.pagination.page = lastPage;
@@ -216,6 +229,7 @@ export class PropusksPage {
   }
 
   async render() {
+    this.state.usePagination = Boolean(this.context.state.ui?.showPropuskPagination);
     const nextStatus = this.context.state.ui?.propuskFilters?.status || "";
     if (nextStatus) {
       this.state.filters.status = nextStatus;
@@ -223,7 +237,17 @@ export class PropusksPage {
     }
     await this.loadReferences();
     await this.loadData();
+    const orgOptions = (this.state.references?.orgs || [])
+      .map((o) => `<option value="${o.id_org}">${o.org_name}</option>`)
+      .join("");
+    const driverOptions = (this.state.references?.abonents || [])
+      .map((a) => {
+        const fullName = `${a.surname} ${a.name}${a.otchestvo ? " " + a.otchestvo : ""}`;
+        return `<option value="${a.id_fio}">${fullName}</option>`;
+      })
+      .join("");
     const node = document.createElement("div");
+    this.host = node;
     node.className = "section";
     node.innerHTML = `
       <div class="md-card">
@@ -233,7 +257,15 @@ export class PropusksPage {
             <h3 style="margin:0;">Реестр обращений</h3>
           </div>
           <div class="filters">
-            <input class="md-input" id="filter-search" placeholder="Поиск по номеру, ФИО или организации" value="${this.state.filters.search || ""}">
+            <select class="md-select" id="filter-org">
+              <option value="">Компания</option>
+              ${orgOptions}
+            </select>
+            <select class="md-select" id="filter-driver">
+              <option value="">Водитель</option>
+              ${driverOptions}
+            </select>
+            <input class="md-input" id="filter-valid-until" type="date" value="${this.state.filters.date_to || ""}">
             <select class="md-select" id="filter-status" value="${this.state.filters.status || ""}">
               <option value="">Все статусы</option>
               <option value="draft">Черновик</option>
@@ -255,10 +287,10 @@ export class PropusksPage {
           <table class="md-table">
             <thead>
               <tr>
-                <th>Госномер</th>
-                <th>Компания</th>
-                <th>Водитель</th>
-                <th>Действует до</th>
+                <th data-sort="gos_id" data-label="Госномер">Госномер</th>
+                <th data-sort="org_name" data-label="Компания">Компания</th>
+                <th data-sort="abonent_fio" data-label="Водитель">Водитель</th>
+                <th data-sort="valid_until" data-label="Действует до">Действует до</th>
                 <th>Статус</th>
                 <th>Действия</th>
               </tr>
@@ -266,25 +298,32 @@ export class PropusksPage {
             <tbody id="propusk-rows"></tbody>
           </table>
         </div>
-        <div class="pagination" id="propusk-pagination">
+        <div id="propusk-sentinel" style="height:1px;"></div>
+        <div class="pagination" id="propusk-pagination" style="${this.state.usePagination ? "" : "display:none;"}">
           <button class="md-btn ghost" data-page="prev">Назад</button>
           <div class="pagination-info" id="propusk-page-info"></div>
           <button class="md-btn ghost" data-page="next">Вперёд</button>
-          <select class="md-select" id="propusk-limit">
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
         </div>
       </div>
     `;
 
     this.renderRows(node.querySelector("#propusk-rows"));
-    this.renderPagination(node);
+    if (this.state.usePagination) {
+      this.renderPagination(node);
+    }
+    this.updateSortHeaders(node);
     this.bind(node);
     const statusSelect = node.querySelector("#filter-status");
     if (statusSelect) {
       statusSelect.value = this.state.filters.status || "";
+    }
+    const orgSelect = node.querySelector("#filter-org");
+    if (orgSelect) {
+      orgSelect.value = this.state.filters.id_org || "";
+    }
+    const driverSelect = node.querySelector("#filter-driver");
+    if (driverSelect) {
+      driverSelect.value = this.state.filters.id_fio || "";
     }
     return node;
   }
@@ -299,7 +338,6 @@ export class PropusksPage {
     const info = node.querySelector("#propusk-page-info");
     const prevBtn = node.querySelector("[data-page='prev']");
     const nextBtn = node.querySelector("[data-page='next']");
-    const limitSelect = node.querySelector("#propusk-limit");
     const { page, limit, total } = this.state.pagination;
     const totalPages = this.getTotalPages();
     if (info) {
@@ -307,7 +345,6 @@ export class PropusksPage {
     }
     if (prevBtn) prevBtn.disabled = page <= 1;
     if (nextBtn) nextBtn.disabled = page >= totalPages || total === 0;
-    if (limitSelect) limitSelect.value = String(limit);
   }
 
   renderRows(tbody) {
@@ -316,7 +353,8 @@ export class PropusksPage {
       return;
     }
 
-    tbody.innerHTML = this.state.propusks
+    const items = this.getSortedPropusks();
+    tbody.innerHTML = items
       .map(
         (p) => `
           <tr data-id="${p.id_propusk}">
@@ -342,27 +380,108 @@ export class PropusksPage {
       .join("");
   }
 
+  getSortedPropusks() {
+    const { key, dir } = this.state.sort || {};
+    if (!key) return [...this.state.propusks];
+    const order = dir === "desc" ? -1 : 1;
+    const items = [...this.state.propusks];
+    const compareText = (a, b) =>
+      String(a || "").localeCompare(String(b || ""), "ru-RU", { sensitivity: "base" });
+    return items.sort((a, b) => {
+      if (key === "valid_until") {
+        const aTime = new Date(a.valid_until || "").getTime();
+        const bTime = new Date(b.valid_until || "").getTime();
+        const aVal = Number.isNaN(aTime) ? 0 : aTime;
+        const bVal = Number.isNaN(bTime) ? 0 : bTime;
+        return (aVal - bVal) * order;
+      }
+      return compareText(a[key], b[key]) * order;
+    });
+  }
+
+  updateSortHeaders(node) {
+    const headers = node.querySelectorAll("th[data-sort]");
+    headers.forEach((th) => {
+      const label = th.dataset.label || th.textContent || "";
+      const isActive = this.state.sort.key === th.dataset.sort;
+      if (!isActive) {
+        th.textContent = label;
+        return;
+      }
+      th.textContent = `${label} ${this.state.sort.dir === "asc" ? "^" : "v"}`;
+    });
+  }
+
+  async loadMore() {
+    if (this.state.loadingMore || !this.state.hasMore) return;
+    this.state.loadingMore = true;
+    this.state.pagination.page += 1;
+    this.context.setPropuskPagination({ page: this.state.pagination.page });
+    try {
+      await this.loadData({ append: true });
+      if (this.host) {
+        this.renderRows(this.host.querySelector("#propusk-rows"));
+        this.updateSortHeaders(this.host);
+      }
+    } catch (err) {
+      handleError(err);
+    } finally {
+      this.state.loadingMore = false;
+    }
+  }
+
+  setupScrollObserver() {
+    if (this.scrollObserver) {
+      this.scrollObserver.disconnect();
+    }
+    if (!this.host || this.state.usePagination) return;
+    const sentinel = this.host.querySelector("#propusk-sentinel");
+    if (!sentinel) return;
+    this.scrollObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          this.loadMore();
+        }
+      },
+      { root: null, rootMargin: "200px", threshold: 0 }
+    );
+    this.scrollObserver.observe(sentinel);
+  }
+
   bind(node) {
     const applyFilters = async () => {
-      const search = node.querySelector("#filter-search").value;
+      const id_org = node.querySelector("#filter-org").value;
+      const id_fio = node.querySelector("#filter-driver").value;
+      const date_to = node.querySelector("#filter-valid-until").value;
       const status = node.querySelector("#filter-status").value;
-      this.state.filters = { search, status };
+      this.state.filters = { id_org, id_fio, date_to, status };
       this.state.pagination.page = 1;
       this.context.setPropuskPagination({ page: 1 });
+      this.context.setPropuskFilters(this.state.filters);
       await this.loadData();
       this.renderRows(node.querySelector("#propusk-rows"));
-      this.renderPagination(node);
+      if (this.state.usePagination) {
+        this.renderPagination(node);
+      } else {
+        this.setupScrollObserver();
+      }
     };
 
     node.querySelector("#apply-filters")?.addEventListener("click", async () => {
       await applyFilters();
     });
 
-    node.querySelector("#filter-search")?.addEventListener("input", () => {
-      if (this.searchTimer) clearTimeout(this.searchTimer);
-      this.searchTimer = setTimeout(async () => {
-        await applyFilters();
-      }, 350);
+    node.querySelector("thead")?.addEventListener("click", (e) => {
+      const th = e.target.closest("th[data-sort]");
+      if (!th) return;
+      const key = th.dataset.sort;
+      let dir = "asc";
+      if (this.state.sort.key === key) {
+        dir = this.state.sort.dir === "asc" ? "desc" : "asc";
+      }
+      this.state.sort = { key, dir };
+      this.renderRows(node.querySelector("#propusk-rows"));
+      this.updateSortHeaders(node);
     });
 
     node.querySelector("#propusk-rows")?.addEventListener("click", async (e) => {
@@ -413,6 +532,7 @@ export class PropusksPage {
     });
 
     node.querySelector("#propusk-pagination")?.addEventListener("click", async (e) => {
+      if (!this.state.usePagination) return;
       const btn = e.target.closest("button[data-page]");
       if (!btn) return;
       const totalPages = this.getTotalPages();
@@ -428,16 +548,6 @@ export class PropusksPage {
       this.renderPagination(node);
     });
 
-    node.querySelector("#propusk-limit")?.addEventListener("change", async (e) => {
-      const value = Number(e.target.value);
-      if (!Number.isFinite(value) || value <= 0) return;
-      this.state.pagination.limit = value;
-      this.state.pagination.page = 1;
-      this.context.setPropuskPagination({ page: 1, limit: value });
-      await this.loadData();
-      this.renderRows(node.querySelector("#propusk-rows"));
-      this.renderPagination(node);
-    });
   }
 
   fillModels(select) {

@@ -2,7 +2,8 @@ export const statusMap = {
   draft: { label: "Черновик", tone: "info" },
   active: { label: "Активен", tone: "success" },
   pending_delete: { label: "На удаление", tone: "warning" },
-  revoked: { label: "Аннулирован", tone: "error" }
+  revoked: { label: "Аннулирован", tone: "error" },
+  expired: { label: "Истек", tone: "warning" }
 };
 
 export function renderStatusChip(status) {

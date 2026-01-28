@@ -132,6 +132,9 @@ require_mark_delete = require_permissions(["mark_delete"])
 require_activate = require_permissions(["activate"])
 require_edit_organization = require_permissions(["edit_organization"])
 require_download_pdf = require_permissions(["download_pdf"])
+require_temp_create = require_permissions(["temp_create"])
+require_temp_delete = require_permissions(["temp_delete"])
+require_temp_download = require_permissions(["temp_download"])
 
 
 def require_reports_access(user: User = Depends(get_current_active_user)) -> User:

@@ -12,6 +12,12 @@ export const ENDPOINTS = {
     reportTemplate: "/api/settings/report-template",
     reportActiveTemplate: "/api/settings/report-template/active",
     reportTemplateVersions: "/api/settings/report-template/versions",
+    tempPassTemplate: "/api/settings/temporary-pass-template",
+    tempPassActiveTemplate: "/api/settings/temporary-pass-template/active",
+    tempPassTemplateVersions: "/api/settings/temporary-pass-template/versions",
+    tempPassReportTemplate: "/api/settings/temporary-pass-report-template",
+    tempPassReportActiveTemplate: "/api/settings/temporary-pass-report-template/active",
+    tempPassReportTemplateVersions: "/api/settings/temporary-pass-report-template/versions",
     apiEnabled: "/api/settings/api-enabled",
     docsEnabled: "/api/settings/docs-enabled"
   },
@@ -24,5 +30,7 @@ export const ENDPOINTS = {
   },
   propusks: "/api/propusk",
   propusksStats: "/api/propusk/stats",
-  propusksPaged: "/api/propusk/paged"
+  propusksPaged: "/api/propusk/paged",
+  temporaryPasses: "/api/temporary-pass",
+  temporaryPassesReport: "/api/temporary-pass/reports/all/pdf"
 };

@@ -12,7 +12,8 @@ export class ReferencesPage {
       marks: [],
       models: [],
       abonents: [],
-      driversPagination: { page: 1, limit: 50, total: 0 }
+      driversPagination: { page: 1, limit: 50, total: 0 },
+      driversSort: { key: "", dir: "asc" }
     };
     const storedPagination = this.context.state.ui?.driversPagination;
     if (storedPagination) {
@@ -145,7 +146,7 @@ export class ReferencesPage {
                 <thead>
                   <tr>
                     <th>ФИО</th>
-                    <th>Организация</th>
+                    <th data-sort="org_name" data-label="Организация">Организация</th>
                     <th>ID</th>
                     <th>Действия</th>
                   </tr>
@@ -170,6 +171,7 @@ export class ReferencesPage {
 
     this.renderTables();
     this.renderDriverPagination();
+    this.updateDriverSortHeader();
 
     const tabs = node.querySelector("#ref-tabs");
     tabs?.addEventListener("click", (e) => {
@@ -178,6 +180,19 @@ export class ReferencesPage {
       const tab = btn.dataset.tab;
       tabs.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === tab));
       node.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.dataset.tab === tab));
+    });
+
+    node.querySelector("[data-tab='drivers'] thead")?.addEventListener("click", (e) => {
+      const th = e.target.closest("th[data-sort]");
+      if (!th) return;
+      const key = th.dataset.sort;
+      let dir = "asc";
+      if (this.state.driversSort.key === key) {
+        dir = this.state.driversSort.dir === "asc" ? "desc" : "asc";
+      }
+      this.state.driversSort = { key, dir };
+      this.renderTables();
+      this.updateDriverSortHeader();
     });
 
     if (canEditOrganizations(this.context.state.user)) {
@@ -303,12 +318,39 @@ export class ReferencesPage {
     }
 
     if (driverTbody) {
-      driverTbody.innerHTML = this.state.abonents.length
-        ? this.state.abonents.map((a) => this.driverRow(a)).join("")
+      const drivers = this.getSortedDrivers();
+      driverTbody.innerHTML = drivers.length
+        ? drivers.map((a) => this.driverRow(a)).join("")
         : `<tr><td colspan="4"><div class="empty">Нет водителей</div></td></tr>`;
     }
 
     this.renderDriverPagination();
+  }
+
+  getSortedDrivers() {
+    const { key, dir } = this.state.driversSort || {};
+    if (!key) return [...this.state.abonents];
+    const order = dir === "desc" ? -1 : 1;
+    const items = [...this.state.abonents];
+    return items.sort((a, b) => {
+      const aVal = a.org_name || a.id_org || "";
+      const bVal = b.org_name || b.id_org || "";
+      return String(aVal).localeCompare(String(bVal), "ru-RU", { sensitivity: "base" }) * order;
+    });
+  }
+
+  updateDriverSortHeader() {
+    if (!this.host) return;
+    const headers = this.host.querySelectorAll("[data-tab='drivers'] th[data-sort]");
+    headers.forEach((th) => {
+      const label = th.dataset.label || th.textContent || "";
+      const isActive = this.state.driversSort.key === th.dataset.sort;
+      if (!isActive) {
+        th.textContent = label;
+        return;
+      }
+      th.textContent = `${label} ${this.state.driversSort.dir === "asc" ? "^" : "v"}`;
+    });
   }
 
   orgRow(org) {

@@ -12,12 +12,14 @@ import { UsersPage } from "./components/pages/Users.js";
 import { ReportsPage } from "./components/pages/Reports.js";
 import { PrintPage } from "./components/pages/Print.js";
 import { SettingsPage } from "./components/pages/Settings.js";
+import { TemporaryPassesPage } from "./components/pages/TemporaryPasses.js";
 
 const appRoot = document.getElementById("app");
 const context = new AppContext();
 
 const pages = {
   dashboard: new DashboardPage(context),
+  temporary: new TemporaryPassesPage(context),
   propusks: new PropusksPage(context),
   references: new ReferencesPage(context),
   print: new PrintPage(context),
@@ -31,6 +33,7 @@ let shell = null;
 function getFirstAccessiblePage(user) {
   const candidates = [
     { key: "dashboard", ok: canShowMenuHome(user) },
+    { key: "temporary", ok: canShowMenuPropusks(user) },
     { key: "propusks", ok: canShowMenuPropusks(user) },
     { key: "references", ok: canShowMenuReferences(user) },
     { key: "print", ok: canShowMenuPrint(user) },
@@ -46,6 +49,8 @@ function canAccessPage(user, page) {
   switch (page) {
     case "dashboard":
       return canShowMenuHome(user);
+    case "temporary":
+      return canShowMenuPropusks(user);
     case "propusks":
       return canShowMenuPropusks(user);
     case "references":

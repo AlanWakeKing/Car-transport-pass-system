@@ -1,7 +1,7 @@
 import json
 from sqlalchemy.orm import Session
 
-from models import PropuskTemplate, ReportTemplate, AppSetting
+from models import PropuskTemplate, ReportTemplate, AppSetting, TemporaryPassTemplate, TemporaryPassReportTemplate
 
 
 def get_active_template(db: Session):
@@ -64,6 +64,70 @@ def save_report_template(db: Session, data: dict, created_by: int) -> ReportTemp
     recent = list_recent_report_templates(db, limit=2)
     recent_ids = {t.id for t in recent}
     db.query(ReportTemplate).filter(~ReportTemplate.id.in_(recent_ids)).delete(synchronize_session=False)
+    db.commit()
+
+    return template
+
+
+def get_active_temp_pass_template(db: Session):
+    return db.query(TemporaryPassTemplate).filter(TemporaryPassTemplate.is_active.is_(True)).order_by(TemporaryPassTemplate.created_at.desc()).first()
+
+
+def list_recent_temp_pass_templates(db: Session, limit: int = 2):
+    return db.query(TemporaryPassTemplate).order_by(TemporaryPassTemplate.created_at.desc()).limit(limit).all()
+
+
+def save_temp_pass_template(db: Session, data: dict, created_by: int) -> TemporaryPassTemplate:
+    latest = db.query(TemporaryPassTemplate).order_by(TemporaryPassTemplate.version.desc()).first()
+    version = (latest.version if latest else 0) + 1
+
+    db.query(TemporaryPassTemplate).filter(TemporaryPassTemplate.is_active.is_(True)).update({TemporaryPassTemplate.is_active: False})
+
+    template = TemporaryPassTemplate(
+        version=version,
+        data=json.dumps(data),
+        created_by=created_by,
+        is_active=True,
+    )
+    db.add(template)
+    db.commit()
+    db.refresh(template)
+
+    recent = list_recent_temp_pass_templates(db, limit=2)
+    recent_ids = {t.id for t in recent}
+    db.query(TemporaryPassTemplate).filter(~TemporaryPassTemplate.id.in_(recent_ids)).delete(synchronize_session=False)
+    db.commit()
+
+    return template
+
+
+def get_active_temp_pass_report_template(db: Session):
+    return db.query(TemporaryPassReportTemplate).filter(TemporaryPassReportTemplate.is_active.is_(True)).order_by(TemporaryPassReportTemplate.created_at.desc()).first()
+
+
+def list_recent_temp_pass_report_templates(db: Session, limit: int = 2):
+    return db.query(TemporaryPassReportTemplate).order_by(TemporaryPassReportTemplate.created_at.desc()).limit(limit).all()
+
+
+def save_temp_pass_report_template(db: Session, data: dict, created_by: int) -> TemporaryPassReportTemplate:
+    latest = db.query(TemporaryPassReportTemplate).order_by(TemporaryPassReportTemplate.version.desc()).first()
+    version = (latest.version if latest else 0) + 1
+
+    db.query(TemporaryPassReportTemplate).filter(TemporaryPassReportTemplate.is_active.is_(True)).update({TemporaryPassReportTemplate.is_active: False})
+
+    template = TemporaryPassReportTemplate(
+        version=version,
+        data=json.dumps(data),
+        created_by=created_by,
+        is_active=True,
+    )
+    db.add(template)
+    db.commit()
+    db.refresh(template)
+
+    recent = list_recent_temp_pass_report_templates(db, limit=2)
+    recent_ids = {t.id for t in recent}
+    db.query(TemporaryPassReportTemplate).filter(~TemporaryPassReportTemplate.id.in_(recent_ids)).delete(synchronize_session=False)
     db.commit()
 
     return template

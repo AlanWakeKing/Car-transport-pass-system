@@ -2,6 +2,7 @@ import { ENDPOINTS } from "../../config/constants.js";
 import { apiGet, openFileInNewTab } from "../../api/client.js";
 import { renderStatusChip } from "../../utils/statusConfig.js";
 import { toast } from "../common/Toast.js";
+import { canDownloadTempPass } from "../../utils/permissions.js";
 
 export class ReportsPage {
   constructor(context) {
@@ -55,6 +56,13 @@ export class ReportsPage {
               <span class="material-icons-round">description</span>
               PDF по всем организациям
             </button>
+
+            ${canDownloadTempPass(this.context.state.user) ? `
+            <button class="md-btn" id="print-temp-passes">
+              <span class="material-icons-round">assignment</span>
+              \u0050\u0044\u0046 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0445 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u043e\u0432
+            </button>
+            ` : ""}
           </div>
         </div>
         <div class="table-scroll">
@@ -117,18 +125,27 @@ export class ReportsPage {
       }
       try {
         await openFileInNewTab(`${ENDPOINTS.propusks}/reports/org/${this.state.selectedOrg}/pdf`);
-        toast.show("PDF готов", "success");
+        toast.show("PDF открыт", "success");
       } catch (err) {
-        toast.show(err.message || "Не удалось сформировать PDF", "error");
+        toast.show(err.message || "Не удалось открыть PDF", "error");
       }
     });
 
     node.querySelector("#print-all-orgs")?.addEventListener("click", async () => {
       try {
         await openFileInNewTab(`${ENDPOINTS.propusks}/reports/org/all/pdf`);
-        toast.show("PDF готов", "success");
+        toast.show("PDF открыт", "success");
       } catch (err) {
-        toast.show(err.message || "Не удалось сформировать PDF", "error");
+        toast.show(err.message || "Не удалось открыть PDF", "error");
+      }
+    });
+
+    node.querySelector("#print-temp-passes")?.addEventListener("click", async () => {
+      try {
+        await openFileInNewTab(ENDPOINTS.temporaryPassesReport);
+        toast.show("PDF временных пропусков открыт", "success");
+      } catch (err) {
+        toast.show(err.message || "Не удалось открыть PDF", "error");
       }
     });
   }

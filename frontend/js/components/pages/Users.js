@@ -11,6 +11,10 @@ const PERMISSIONS = [
   { key: "menu_create_pass", label: "TG: Создание пропуска" },
   { key: "menu_edit_pass", label: "TG: Редактирование пропуска" },
   { key: "menu_history", label: "TG: История пропуска" },
+  { key: "temp_create", label: "Временные: Создание" },
+  { key: "temp_delete", label: "Временные: Удаление" },
+  { key: "temp_download", label: "Временные: PDF" },
+  { key: "temp_view_all", label: "Временные: Все статусы" },
   { key: "activate", label: "Активация" },
   { key: "delete", label: "Удаление" },
   { key: "annul", label: "Аннулирование" },
@@ -26,7 +30,8 @@ const MENU_PERMISSIONS = [
   { key: "menu_print", label: "В печать" },
   { key: "menu_reports", label: "Отчёты" },
   { key: "menu_users", label: "Пользователи" },
-  { key: "menu_settings", label: "Настройки" }
+  { key: "menu_settings", label: "Настройки" },
+  { key: "menu_temporary", label: "Временные пропуска" }
 ];
 
 function normalizePermissions(data) {

@@ -10,6 +10,9 @@ export class AppContext {
       ui: {
         propuskFilters: { status: "" },
         propuskPagination: { page: 1, limit: 50 },
+        showPropuskPagination: false,
+        temporaryFilters: { status: "" },
+        temporaryPagination: { page: 1, limit: 50 },
         driversPagination: { page: 1, limit: 50 },
         ...storedUi
       }
@@ -62,8 +65,26 @@ export class AppContext {
     this.emit("ui-change", this.state.ui);
   }
 
+  setPropuskPaginationVisibility(value) {
+    this.state.ui.showPropuskPagination = Boolean(value);
+    this.storeUi();
+    this.emit("ui-change", this.state.ui);
+  }
+
   setDriversPagination(pagination) {
     this.state.ui.driversPagination = { ...this.state.ui.driversPagination, ...pagination };
+    this.storeUi();
+    this.emit("ui-change", this.state.ui);
+  }
+
+  setTemporaryFilters(filters) {
+    this.state.ui.temporaryFilters = { ...this.state.ui.temporaryFilters, ...filters };
+    this.storeUi();
+    this.emit("ui-change", this.state.ui);
+  }
+
+  setTemporaryPagination(pagination) {
+    this.state.ui.temporaryPagination = { ...this.state.ui.temporaryPagination, ...pagination };
     this.storeUi();
     this.emit("ui-change", this.state.ui);
   }
@@ -74,7 +95,10 @@ export class AppContext {
         propuskFilters: this.state.ui.propuskFilters,
         lastPage: this.state.ui.lastPage,
         propuskPagination: this.state.ui.propuskPagination,
-        driversPagination: this.state.ui.driversPagination
+        showPropuskPagination: this.state.ui.showPropuskPagination,
+        driversPagination: this.state.ui.driversPagination,
+        temporaryFilters: this.state.ui.temporaryFilters,
+        temporaryPagination: this.state.ui.temporaryPagination
       };
       localStorage.setItem("ui_state", JSON.stringify(payload));
     } catch {
