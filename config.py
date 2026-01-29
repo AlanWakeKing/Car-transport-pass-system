@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     APP_NAME: str = "Система управления пропусками"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+
+    # Timezone (e.g. "Europe/Moscow"). If not set, use system local timezone.
+    TIMEZONE: str | None = None
     
     class Config:
         env_file = ".env"

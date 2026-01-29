@@ -2,6 +2,7 @@
 Service for temporary passes.
 """
 from datetime import datetime, time as dt_time, date as dt_date
+from zoneinfo import ZoneInfo
 from typing import Optional, List
 
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from sqlalchemy import func
 from fastapi import HTTPException, status
 
 from models import TemporaryPass, Organiz
+from config import settings
 
 
 class TemporaryPassService:
@@ -17,6 +19,8 @@ class TemporaryPassService:
 
     @staticmethod
     def _now() -> datetime:
+        if settings.TIMEZONE:
+            return datetime.now(ZoneInfo(settings.TIMEZONE))
         return datetime.now().astimezone()
 
     @staticmethod

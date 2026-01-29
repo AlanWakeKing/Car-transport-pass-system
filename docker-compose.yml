@@ -21,5 +21,7 @@ services:
       CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-}
+      TIMEZONE: ${TIMEZONE:-Europe/Moscow}
+      TZ: ${TZ:-Europe/Moscow}
     env_file:
       - .env
