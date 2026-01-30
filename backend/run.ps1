@@ -8,4 +8,5 @@ if (-not (Test-Path $pythonExe)) {
   exit 1
 }
 
+Set-Location $PSScriptRoot
 & $pythonExe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000

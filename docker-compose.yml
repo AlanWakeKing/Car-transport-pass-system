@@ -3,6 +3,9 @@ version: "3.9"
 services:
   app:
     image: alanwakeking/propusk-system:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: propusk_app
     ports:
       - "8000:8000"
@@ -24,4 +27,4 @@ services:
       TIMEZONE: ${TIMEZONE:-Europe/Moscow}
       TZ: ${TZ:-Europe/Moscow}
     env_file:
-      - .env
+      - backend/.env

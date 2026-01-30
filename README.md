@@ -2,6 +2,11 @@
 
 Система управления пропусками автотранспорта с веб-интерфейсом, правами доступа и генерацией PDF.
 
+## Структура репозитория
+- backend/ - FastAPI backend (API + отдача web).
+- web/ - веб-интерфейс (PWA-ready).
+- mobile/android/ - Android приложение (Kotlin/Android Studio).
+
 ## Требования
 - Python 3.12 (обязательно).
 - PostgreSQL.
@@ -59,6 +64,7 @@
 ### Windows (PowerShell)
 ```powershell
 cd Car-transport-pass-system
+cd backend
 
 # 1) Создать venv на Python 3.12
 py -3.12 -m venv venv312
@@ -88,6 +94,7 @@ $env:COOKIE_SAMESITE="lax"
 ### macOS / Linux (bash/zsh)
 ```bash
 cd Car-transport-pass-system
+cd backend
 
 # 1) Создать venv на Python 3.12
 python3.12 -m venv venv312
@@ -144,14 +151,9 @@ export COOKIE_SAMESITE=lax
 По умолчанию значения прописаны в config.py; для продакшена вынесите их в .env.
 
 ## Структура
-- main.py - точка входа FastAPI, подключение роутеров и фронтенда.
-- models.py - SQLAlchemy модели (пользователи, пропуска, справочники, история, архив, шаблоны).
-- auth/ - авторизация, пользователи, права доступа.
-- propusk/ - логика пропусков, статусы, PDF.
-- references/ - справочники (организации, марки, модели, водители/абоненты).
-- settings/ - шаблоны PDF (пропуска и отчеты).
-- frontend/ - HTML/CSS/JS интерфейс.
-- Скрипты: init_db.py, seed_data.py, seed_propusks.py, create_admin.py, install_fonts.py.
+- backend/ - FastAPI backend (main.py, модели, роутеры, миграции, скрипты).
+- web/ - HTML/CSS/JS интерфейс.
+- mobile/android/ - Android приложение (Kotlin/Android Studio).
 
 ## Полезное
 - После изменения прав пользователя нужно перелогиниться (обновить токен).
@@ -164,7 +166,7 @@ export COOKIE_SAMESITE=lax
 
 Сборка образа:
 ```bash
-docker build -t propusk-system:latest .
+docker build -t propusk-system:latest -f backend/Dockerfile .
 ```
 
 Запуск контейнера:
@@ -180,12 +182,12 @@ docker run --rm -p 8000:8000 \
 
 Если нужно запускать с локальным `.env`, можно использовать:
 ```bash
-docker run --rm -p 8000:8000 --env-file .env propusk-system:latest
+docker run --rm -p 8000:8000 --env-file backend/.env propusk-system:latest
 ```
 
 ### 2) Запуск через docker compose
 ```bash
-# 1) Заполните .env (POSTGRES_* и SECRET_KEY)
+# 1) Заполните backend/.env (POSTGRES_* и SECRET_KEY)
 # 2) Поднять сервисы
 docker compose up -d --build
 ```
@@ -204,7 +206,7 @@ docker compose run --rm app python seed_propusks.py   # опционально
 docker compose run --rm app python create_admin.py
 ```
 
-### 4) Переменные окружения (.env)
+### 4) Переменные окружения (backend/.env)
 Можно задать либо `DATABASE_URL`, либо набор `POSTGRES_*` (если `DATABASE_URL` не задан, он будет собран автоматически).
 
 Минимально нужны:

@@ -181,7 +181,7 @@ app.include_router(propusk_router)
 
 
 # Монтирование статических файлов фронтенда
-frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
+frontend_dir = os.path.join(os.path.dirname(__file__), "..", "web")
 
 
 class UTF8StaticFiles(StaticFiles):
@@ -227,9 +227,9 @@ def root():
             "version": settings.APP_VERSION,
             "status": "running",
             "api_docs": "/docs",
-            "message": "Фронтенд не найден. Создайте папку frontend/ со следующей структурой:",
+            "message": "Фронтенд не найден. Создайте папку web/ со следующей структурой:",
             "required_structure": {
-                "frontend/": {
+                "web/": {
                     "index.html": "Главный HTML файл",
                     "css/": ["main.css", "material.css", "animations.css"],
                     "js/": {
@@ -254,7 +254,7 @@ def telegram_auth():
         return FileResponse(frontend_path, media_type="text/html; charset=utf-8")
     return {
         "error": "not_found",
-        "message": "telegram-auth.html not found in frontend directory"
+        "message": "telegram-auth.html not found in web directory"
     }
 
 
