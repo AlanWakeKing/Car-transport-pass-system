@@ -248,6 +248,8 @@ class TemporaryPass(Base):
             now = datetime.now(tz=self.valid_until.tzinfo) if self.valid_until.tzinfo else datetime.now()
             if now > self.valid_until:
                 return "expired"
+        if self.entered_at and not self.exited_at:
+            return "on_territory"
         return "active"
 
 # 11. Temporary pass PDF templates

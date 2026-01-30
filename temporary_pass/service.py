@@ -234,6 +234,15 @@ class TemporaryPassService:
         if status_filter == "active":
             query = query.filter(
                 TemporaryPass.revoked_at.is_(None),
+                TemporaryPass.entered_at.is_(None),
+                TemporaryPass.valid_from <= now,
+                TemporaryPass.valid_until > now,
+            )
+        elif status_filter == "on_territory":
+            query = query.filter(
+                TemporaryPass.revoked_at.is_(None),
+                TemporaryPass.entered_at.is_not(None),
+                TemporaryPass.exited_at.is_(None),
                 TemporaryPass.valid_from <= now,
                 TemporaryPass.valid_until > now,
             )
@@ -270,6 +279,15 @@ class TemporaryPassService:
         if status_filter == "active":
             query = query.filter(
                 TemporaryPass.revoked_at.is_(None),
+                TemporaryPass.entered_at.is_(None),
+                TemporaryPass.valid_from <= now,
+                TemporaryPass.valid_until > now,
+            )
+        elif status_filter == "on_territory":
+            query = query.filter(
+                TemporaryPass.revoked_at.is_(None),
+                TemporaryPass.entered_at.is_not(None),
+                TemporaryPass.exited_at.is_(None),
                 TemporaryPass.valid_from <= now,
                 TemporaryPass.valid_until > now,
             )

@@ -101,6 +101,7 @@ export class TemporaryPassesPage {
             <select class="md-select" id="filter-status">
               <option value="">\u0412\u0441\u0435 \u0441\u0442\u0430\u0442\u0443\u0441\u044b</option>
               <option value="active">\u0410\u043a\u0442\u0438\u0432\u0435\u043d</option>
+              <option value="on_territory">\u041d\u0430 \u0442\u0435\u0440\u0440\u0438\u0442\u043e\u0440\u0438\u0438</option>
               <option value="expired">\u0418\u0441\u0442\u0435\u043a</option>
               <option value="revoked">\u041e\u0442\u043e\u0437\u0432\u0430\u043d</option>
             </select>

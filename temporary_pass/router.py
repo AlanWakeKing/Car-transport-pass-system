@@ -48,7 +48,7 @@ def create_temporary_pass(
 
 @router.get("", response_model=TemporaryPassListResponse)
 def list_temporary_passes(
-    status_filter: Optional[str] = Query(None, description="active, expired, revoked"),
+    status_filter: Optional[str] = Query(None, description="active, on_territory, expired, revoked"),
     id_org: Optional[int] = Query(None),
     gos_id: Optional[str] = Query(None),
     date_from: Optional[date] = Query(None),
