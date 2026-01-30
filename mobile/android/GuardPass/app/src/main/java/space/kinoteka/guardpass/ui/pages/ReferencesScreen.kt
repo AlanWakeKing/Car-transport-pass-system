@@ -26,7 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -165,7 +165,10 @@ fun ReferencesScreen(
             Spacer(Modifier.height(8.dp))
         }
 
-        TabRow(selectedTabIndex = selected.ordinal) {
+        ScrollableTabRow(
+            selectedTabIndex = selected.ordinal,
+            edgePadding = 0.dp
+        ) {
             RefTab.values().forEach { tab ->
                 Tab(
                     selected = selected == tab,
