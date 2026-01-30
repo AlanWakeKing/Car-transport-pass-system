@@ -8,7 +8,9 @@ export const statusMap = {
 };
 
 export function renderStatusChip(status) {
-  const cfg = statusMap[status] || { label: status, tone: "info" };
+  const raw = status == null ? "" : String(status);
+  const key = raw.trim().toLowerCase();
+  const cfg = statusMap[key] || { label: raw, tone: "info" };
   const toneClass = cfg.tone ? cfg.tone : "info";
   return `<span class="md-chip ${toneClass}">${cfg.label}</span>`;
 }
