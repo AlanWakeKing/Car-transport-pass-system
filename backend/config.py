@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     # Timezone (e.g. "Europe/Moscow"). If not set, use system local timezone.
     TIMEZONE: str | None = None
+    TZ: str | None = None
     
     class Config:
         env_file = ".env"
