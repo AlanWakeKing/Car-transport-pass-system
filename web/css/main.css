@@ -550,10 +550,88 @@
     grid-template-columns: 1fr;
   }
   .sidebar {
-    position: static;
+    position: sticky;
+    top: 0;
     height: auto;
+    padding: 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--md-border);
+    z-index: 10;
+  }
+  .sidebar .menu {
+    flex-direction: row;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.4rem;
+    scrollbar-width: thin;
+  }
+  .menu-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .header {
+    padding: 1.1rem 1rem 0.5rem 1rem;
+  }
+  .content {
+    padding: 0.75rem 1rem 1.5rem 1rem;
+  }
+  .page-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .toolbar {
+    align-items: stretch;
+  }
+  .toolbar .filters.single-row {
+    flex-wrap: wrap;
+  }
+  .toolbar .filters.single-row .md-input,
+  .toolbar .filters.single-row .md-select,
+  .toolbar .filters.single-row .md-btn {
+    flex: 1 1 100%;
+    min-width: 0;
   }
   .propusk-edit-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    min-height: auto;
+    padding: 1.25rem;
+  }
+  .auth-card {
+    padding: 1.5rem;
+  }
+  .brand {
+    justify-content: center;
+    text-align: center;
+    flex-direction: column;
+  }
+  .md-card {
+    padding: 1rem;
+  }
+  .modal {
+    padding: 1rem;
+    width: 100%;
+  }
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .modal-footer .md-btn {
+    width: 100%;
+  }
+  .toast {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    min-width: 0;
+    width: auto;
+  }
+  .md-table th,
+  .md-table td {
+    padding: 0.65rem 0.5rem;
   }
 }
