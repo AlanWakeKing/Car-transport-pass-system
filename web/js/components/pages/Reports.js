@@ -33,13 +33,13 @@ export class ReportsPage {
     node.className = "section";
     node.innerHTML = `
       <div class="md-card section">
-        <div class="md-toolbar">
+        <div class="md-toolbar toolbar stack">
           <div>
             <p class="tag">Отчёты</p>
             <h3 style="margin:0;">Отчёт по организациям</h3>
           </div>
         </div>
-        <div class="md-toolbar">
+        <div class="md-toolbar toolbar stack">
           <div class="md-field" style="min-width:220px;">
             <label>Организация</label>
             <select class="md-select" id="org-select">
@@ -47,7 +47,7 @@ export class ReportsPage {
               ${this.state.orgs.map((o) => `<option value="${o.id_org}">${o.org_name}</option>`).join("")}
             </select>
           </div>
-          <div class="inline-actions">
+          <div class="toolbar-actions">
             <button class="md-btn secondary" id="print-org">
               <span class="material-icons-round">picture_as_pdf</span>
               PDF по организации
@@ -56,34 +56,37 @@ export class ReportsPage {
               <span class="material-icons-round">description</span>
               PDF по всем организациям
             </button>
-
             ${canDownloadTempPass(this.context.state.user) ? `
             <button class="md-btn" id="print-temp-passes">
               <span class="material-icons-round">assignment</span>
-              \u0050\u0044\u0046 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0445 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u043e\u0432
+              PDF временных пропусков
             </button>
             ` : ""}
           </div>
         </div>
-        <div class="table-scroll">
-          <table class="md-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Госномер</th>
-                <th>Марка/модель</th>
-                <th>ФИО</th>
-                <th>Статус</th>
-                <th>До</th>
-              </tr>
-            </thead>
-            <tbody id="org-propusk-rows"></tbody>
-          </table>
+        <div class="table-wrap desktop-only">
+          <div class="table-scroll">
+            <table class="md-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Госномер</th>
+                  <th>Марка/модель</th>
+                  <th>ФИО</th>
+                  <th>Статус</th>
+                  <th>До</th>
+                </tr>
+              </thead>
+              <tbody id="org-propusk-rows"></tbody>
+            </table>
+          </div>
         </div>
+        <div class="mobile-cards mobile-only" id="org-propusk-cards"></div>
       </div>
     `;
 
     this.renderOrgRows(node.querySelector("#org-propusk-rows"));
+    this.renderOrgCards(node.querySelector("#org-propusk-cards"));
     this.bind(node);
     return node;
   }
@@ -112,10 +115,42 @@ export class ReportsPage {
       .join("");
   }
 
+  renderOrgCards(container) {
+    if (!container) return;
+    const filtered = this.state.propusks.filter((p) =>
+      this.state.selectedOrg ? String(p.id_org) === String(this.state.selectedOrg) : false
+    );
+    if (!filtered.length) {
+      container.innerHTML = `<div class="empty">Выберите организацию</div>`;
+      return;
+    }
+    container.innerHTML = filtered
+      .map(
+        (p) => `
+          <div class="mobile-card">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${p.gos_id}</div>
+                <div class="mobile-card-subtitle">ID ${p.id_propusk}</div>
+              </div>
+              <div>${renderStatusChip(p.status)}</div>
+            </div>
+            <div class="mobile-card-meta">
+              <div class="mobile-card-row"><span>Марка/модель</span><span>${(p.mark_name || "")} ${(p.model_name || "")}</span></div>
+              <div class="mobile-card-row"><span>ФИО</span><span>${p.abonent_fio || "-"}</span></div>
+              <div class="mobile-card-row"><span>До</span><span>${p.valid_until || "-"}</span></div>
+            </div>
+          </div>
+        `
+      )
+      .join("");
+  }
+
   bind(node) {
     node.querySelector("#org-select")?.addEventListener("change", (e) => {
       this.state.selectedOrg = e.target.value;
       this.renderOrgRows(node.querySelector("#org-propusk-rows"));
+      this.renderOrgCards(node.querySelector("#org-propusk-cards"));
     });
 
     node.querySelector("#print-org")?.addEventListener("click", async () => {

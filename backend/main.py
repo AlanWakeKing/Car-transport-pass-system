@@ -210,6 +210,11 @@ js_dir = os.path.join(frontend_dir, "js")
 if os.path.exists(js_dir):
     app.mount("/js", UTF8StaticFiles(directory=js_dir), name="js")
 
+# Монтируем PWA-иконки
+pwa_dir = os.path.join(frontend_dir, "pwa")
+if os.path.exists(pwa_dir):
+    app.mount("/pwa", UTF8StaticFiles(directory=pwa_dir), name="pwa")
+
 
 # Корневой endpoint - отдаём главную страницу фронтенда
 @app.get("/")
@@ -244,6 +249,15 @@ def root():
                 }
             }
         }
+
+
+# PWA manifest
+@app.get("/manifest.json")
+def manifest():
+    manifest_path = os.path.join(frontend_dir, "manifest.json")
+    if os.path.exists(manifest_path):
+        return FileResponse(manifest_path, media_type="application/manifest+json; charset=utf-8")
+    return {"error": "not_found", "message": "manifest.json not found in web directory"}
 
 
 # Telegram mini-web app (auth)

@@ -30,8 +30,8 @@ export class AppShell {
           <div class="brand">
             <div class="logo">PT</div>
             <div>
-              <div style="font-weight:800;"></div>
-              <div style="color:var(--md-text-muted);"></div>
+              <div style="font-weight:800;">Пропуска автотранспорта</div>
+              <div style="color:var(--md-text-muted);">Цифровой пропускной режим</div>
             </div>
           </div>
           <div class="menu" id="app-menu">
@@ -49,11 +49,19 @@ export class AppShell {
             <div style="font-weight:700;">${user?.full_name || ""}</div>
             <button class="md-btn ghost" id="logout-btn">
               <span class="material-icons-round">logout</span>
+              Выход
             </button>
           </div>
         </aside>
         <main>
           <header class="header">
+            <div class="mobile-brand mobile-only">
+              <div class="logo">PT</div>
+              <div class="mobile-brand-text">
+                <div class="mobile-brand-title">Пропуска автотранспорта</div>
+                <div class="mobile-brand-subtitle">Цифровой пропускной режим</div>
+              </div>
+            </div>
             <div class="page-title">
               <div>
                 <p class="tag">  </p>

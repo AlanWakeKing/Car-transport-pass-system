@@ -69,7 +69,7 @@ export class UsersPage {
           ${canManageUsers(this.context.state.user) ? `<button class="md-btn" id="add-user"><span class="material-icons-round">add</span>Добавить</button>` : ""}
         </div>
         <div class="md-divider"></div>
-        <div class="table-scroll">
+        <div class="table-scroll desktop-only">
           <table class="md-table">
             <thead>
               <tr>
@@ -85,12 +85,25 @@ export class UsersPage {
             </tbody>
           </table>
         </div>
+        <div class="mobile-cards mobile-only" id="user-cards"></div>
       </div>
     `;
+
+    this.host = node;
+    this.renderCards(node.querySelector("#user-cards"), this.state.users);
 
     if (canManageUsers(this.context.state.user)) {
       node.querySelector("#add-user")?.addEventListener("click", () => this.openUserModal());
       node.querySelector("#user-rows")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-action]");
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const user = this.state.users.find((u) => String(u.id) === String(id));
+        if (!user) return;
+        if (btn.dataset.action === "edit") this.openUserModal(user);
+        if (btn.dataset.action === "delete") this.confirmDelete(user);
+      });
+      node.querySelector("#user-cards")?.addEventListener("click", (e) => {
         const btn = e.target.closest("[data-action]");
         if (!btn) return;
         const id = btn.dataset.id;
@@ -119,6 +132,40 @@ export class UsersPage {
         </td>
       </tr>
     `;
+  }
+
+  renderCards(container, users) {
+    if (!container) return;
+    if (!users.length) {
+      container.innerHTML = `<div class="empty">Пользователи не найдены</div>`;
+      return;
+    }
+    const canManage = canManageUsers(this.context.state.user);
+    container.innerHTML = users.map((user) => {
+      const statusChip = user.is_active
+        ? "<span class='md-chip success'>Активен</span>"
+        : "<span class='md-chip error'>Отключен</span>";
+      const actions = canManage ? `
+        <button class="md-btn ghost" data-action="edit" data-id="${user.id}">Редактировать</button>
+        <button class="md-btn ghost" data-action="delete" data-id="${user.id}">Удалить</button>
+      ` : "";
+      return `
+        <div class="mobile-card">
+          <div class="mobile-card-header">
+            <div>
+              <div class="mobile-card-title">${user.username}</div>
+              <div class="mobile-card-subtitle">${user.full_name || "-"}</div>
+            </div>
+            ${statusChip}
+          </div>
+          <div class="mobile-card-meta">
+            <div class="mobile-card-row"><span>Роль</span><span><span class="md-chip info">${user.role}</span></span></div>
+            <div class="mobile-card-row"><span>Статус</span><span>${statusChip}</span></div>
+          </div>
+          ${actions ? `<div class="mobile-card-actions">${actions}</div>` : ""}
+        </div>
+      `;
+    }).join("");
   }
 
   openUserModal(user) {
@@ -216,7 +263,11 @@ export class UsersPage {
         }
         instance.close();
         await this.load();
-        document.querySelector("#user-rows").innerHTML = this.state.users.map((u) => this.row(u)).join("");
+        if (this.host) {
+          const rows = this.host.querySelector("#user-rows");
+          if (rows) rows.innerHTML = this.state.users.map((u) => this.row(u)).join("");
+          this.renderCards(this.host.querySelector("#user-cards"), this.state.users);
+        }
       } catch (err) {
         handleError(err);
       }
@@ -241,7 +292,11 @@ export class UsersPage {
         toast.show("Пользователь удалён", "success");
         instance.close();
         await this.load();
-        document.querySelector("#user-rows").innerHTML = this.state.users.map((u) => this.row(u)).join("");
+        if (this.host) {
+          const rows = this.host.querySelector("#user-rows");
+          if (rows) rows.innerHTML = this.state.users.map((u) => this.row(u)).join("");
+          this.renderCards(this.host.querySelector("#user-cards"), this.state.users);
+        }
       } catch (err) {
         handleError(err);
       }

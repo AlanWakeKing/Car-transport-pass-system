@@ -1,4 +1,4 @@
-import { ENDPOINTS } from "../../config/constants.js";
+﻿import { ENDPOINTS } from "../../config/constants.js";
 import { apiGet, apiPost, apiPut, handleError } from "../../api/client.js";
 import { toast } from "../common/Toast.js";
 
@@ -618,50 +618,32 @@ export class SettingsPage {
     node.innerHTML = `
       <div class="md-card section">
         <div class="md-toolbar">
-          <div>
-            <p class="tag">Настройки</p>
-            <h3 style="margin:0;">Доступ к API</h3>
-          </div>
-          <div class="pill-switch" id="api-toggle">
-            <button data-enabled="true" class="${this.state.api.enabled ? "active" : ""}">Вкл</button>
-            <button data-enabled="false" class="${!this.state.api.enabled ? "active" : ""}">Выкл</button>
-          </div>
+          <div>            <p class="tag">Настройки</p>            <h3 style="margin:0;">Доступ к API</h3>          </div>          <div class="pill-switch" id="api-toggle">            <button data-enabled="true" class="${this.state.api.enabled ? "active" : ""}">Вкл</button>            <button data-enabled="false" class="${!this.state.api.enabled ? "active" : ""}">Выкл</button>          </div>
         </div>
         <p class="hint">Отключение API блокирует все /api запросы, кроме входа и включения.</p>
       </div>
       <div class="md-card section">
         <div class="md-toolbar">
           <div>
-            <p class="tag">\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f</p>
-            <h3 style="margin:0;">\u0414\u043e\u0441\u0442\u0443\u043f \u043a /docs</h3>
+            <p class="tag">Документация</p>
+            <h3 style="margin:0;">Доступ к /docs</h3>
           </div>
           <div class="pill-switch" id="docs-toggle">
-            <button data-enabled="true" class="${this.state.docs.enabled ? "active" : ""}">\u0412\u043a\u043b</button>
-            <button data-enabled="false" class="${!this.state.docs.enabled ? "active" : ""}">\u0412\u044b\u043a\u043b</button>
+            <button data-enabled="true" class="${this.state.docs.enabled ? "active" : ""}">Вкл</button>
+            <button data-enabled="false" class="${!this.state.docs.enabled ? "active" : ""}">Выкл</button>
           </div>
         </div>
-        <p class="hint">\u041e\u0442\u043a\u043b\u044e\u0447\u0430\u0435\u0442/\u0432\u043a\u043b\u044e\u0447\u0430\u0435\u0442 \u0440\u0430\u0437\u0434\u0435\u043b Swagger/Redoc \u0432 OpenAPI \u043f\u0440\u043e\u0435\u043a\u0442\u0435.</p>
+        <p class="hint">Отключает/включает раздел Swagger/Redoc в OpenAPI проекте.</p>
       </div>
       <div class="md-card section">
         <div class="md-toolbar">
-          <div>
-            <p class="tag">Интерфейс</p>
-            <h3 style="margin:0;">Пагинация в пропусках</h3>
-          </div>
-          <div class="pill-switch" id="propusk-pagination-toggle">
-            <button data-enabled="true" class="${this.state.ui.showPropuskPagination ? "active" : ""}">Да</button>
-            <button data-enabled="false" class="${!this.state.ui.showPropuskPagination ? "active" : ""}">Нет</button>
-          </div>
+          <div>            <p class="tag">Интерфейс</p>            <h3 style="margin:0;">Пагинация в пропусках</h3>          </div>          <div class="pill-switch" id="propusk-pagination-toggle">            <button data-enabled="true" class="${this.state.ui.showPropuskPagination ? "active" : ""}">Да</button>            <button data-enabled="false" class="${!this.state.ui.showPropuskPagination ? "active" : ""}">Нет</button>          </div>
         </div>
         <p class="hint">Показывает блок пагинации в разделе "Пропуска".</p>
       </div>
-<div class="md-card section">
+<div class="md-card section desktop-only">
         <div class="md-toolbar">
-          <div>
-            <p class="tag">Настройки</p>
-            <h3 style="margin:0;">Редактор шаблонов</h3>
-          </div>
-          <div class="inline-actions">
+          <div>            <p class="tag">Настройки</p>            <h3 style="margin:0;">Редактор шаблонов</h3>          </div>          <div class="inline-actions">
             <button class="md-btn ghost" id="reset-template">Сбросить</button>
             <button class="md-btn" id="save-template">Сохранить</button>
           </div>
@@ -673,7 +655,7 @@ export class SettingsPage {
           <button class="tab ${this.state.tab === "temp_report" ? "active" : ""}" data-tab="temp_report">\u041e\u0442\u0447\u0435\u0442 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0445</button>
         </div>
         <div class="template-layout">
-          <div class="md-card template-editor">
+          <div class="md-card template-editor desktop-only">
             <div class="template-toolbar">
               <select class="md-select" id="field-select">
                 ${this.getFieldOptions().map((f) => `<option value="${f.key}">${f.label}</option>`).join("")}
@@ -682,9 +664,7 @@ export class SettingsPage {
               <button class="md-btn secondary" id="add-text">Текст</button>
               <button class="md-btn secondary" id="add-line">Линия</button>
               <button class="md-btn secondary" id="add-rect">Рамка</button>
-              <label class="md-btn secondary file-btn">
-                Логотип
-                <input type="file" id="add-logo" accept="image/*" hidden>
+              <label class="md-btn secondary file-btn">                Логотип                <input type="file" id="add-logo" accept="image/*" hidden>
               </label>
             </div>
             <div class="template-canvas" id="template-canvas"></div>

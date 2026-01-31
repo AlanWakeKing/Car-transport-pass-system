@@ -330,7 +330,7 @@ export class ReferencesPage {
     const { page, limit, total } = this.state.driversPagination;
     const totalPages = this.getDriverTotalPages();
     if (info) {
-      info.textContent = ` ${Math.min(page, totalPages)}  ${totalPages}  : ${total}`;
+      info.textContent = `Страница ${Math.min(page, totalPages)} из ${totalPages}. Всего: ${total}`;
     }
     if (prevBtn) prevBtn.disabled = page <= 1;
     if (nextBtn) nextBtn.disabled = page >= totalPages || total === 0;
@@ -511,9 +511,9 @@ export class ReferencesPage {
           </div>
         </div>
         <div class="mobile-card-meta">
-          <div class="mobile-card-row"><span> </span><span>${limit}</span></div>
-          <div class="mobile-card-row"><span> </span><span>${org.free_mesto ?? 0}</span></div>
-          <div class="mobile-card-row"><span></span><span>${org.comment || "-"}</span></div>
+          <div class="mobile-card-row"><span>Гостевые места</span><span>${limit}</span></div>
+          <div class="mobile-card-row"><span>Свободные места</span><span>${org.free_mesto ?? 0}</span></div>
+          <div class="mobile-card-row"><span>Комментарий</span><span>${org.comment || "-"}</span></div>
         </div>
         ${actions ? `<div class="mobile-card-actions">${actions}</div>` : ""}
       </div>
@@ -556,7 +556,7 @@ export class ReferencesPage {
           </div>
         </div>
         <div class="mobile-card-meta">
-          <div class="mobile-card-row"><span></span><span>${model.mark_name || model.id_mark}</span></div>
+          <div class="mobile-card-row"><span>Марка</span><span>${model.mark_name || model.id_mark}</span></div>
         </div>
         ${actions ? `<div class="mobile-card-actions">${actions}</div>` : ""}
       </div>
@@ -580,12 +580,13 @@ export class ReferencesPage {
           </div>
         </div>
         <div class="mobile-card-meta">
-          <div class="mobile-card-row"><span></span><span>${driver.org_name || driver.id_org || "-"}</span></div>
+          <div class="mobile-card-row"><span>Организация</span><span>${driver.org_name || driver.id_org || "-"}</span></div>
         </div>
         ${actions ? `<div class="mobile-card-actions">${actions}</div>` : ""}
       </div>
     `;
   }
+
 
   openOrgModal(org) {
     const isEdit = Boolean(org);
@@ -593,27 +594,27 @@ export class ReferencesPage {
     form.className = "section";
     form.innerHTML = `
       <div class="md-field">
-        <label></label>
+        <label>Организация</label>
         <input class="md-input" name="org_name" value="${org?.org_name || ""}" required>
       </div>
       <div class="md-field">
-        <label> </label>
+        <label>Гостевые места</label>
         <input class="md-input" name="free_mesto_limit" type="number" value="${org?.free_mesto_limit ?? org?.free_mesto ?? 0}">
       </div>
       <div class="md-field">
-        <label> </label>
+        <label>Свободные места</label>
         <input class="md-input" name="free_mesto" type="number" value="${org?.free_mesto ?? org?.free_mesto_limit ?? 0}">
       </div>
       <div class="md-field">
-        <label></label>
-        <textarea class="md-textarea" name="comment" placeholder=" ">${org?.comment || ""}</textarea>
+        <label>Комментарий</label>
+        <textarea class="md-textarea" name="comment" placeholder="Комментарий">${org?.comment || ""}</textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-org">Отмена</button>
-        <button class="md-btn" type="submit">${isEdit ? "" : ""}</button>
+        <button class="md-btn" type="submit">Сохранить</button>
       </div>
     `;
-    const instance = modal.show({ title: isEdit ? " " : " ", content: form });
+    const instance = modal.show({ title: isEdit ? "Редактирование организации" : "Новая организация", content: form });
     form.querySelector("#cancel-org")?.addEventListener("click", () => instance.close());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -627,10 +628,10 @@ export class ReferencesPage {
       try {
         if (isEdit) {
           await apiPatch(`${ENDPOINTS.references.organizations}/${org.id_org}`, data);
-          toast.show(" ", "success");
+          toast.show("Организация сохранена", "success");
         } else {
           await apiPost(ENDPOINTS.references.organizations, data);
-          toast.show(" ", "success");
+          toast.show("Организация добавлена", "success");
         }
         instance.close();
         await this.load();
@@ -645,18 +646,18 @@ export class ReferencesPage {
     const content = document.createElement("div");
     content.className = "section";
     content.innerHTML = `
-      <p>  <strong>${org.org_name}</strong>?</p>
+      <p>Удалить организацию <strong>${org.org_name}</strong>?</p>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-del">Отмена</button>
         <button type="button" class="md-btn" id="confirm-del">Удалить</button>
       </div>
     `;
-    const instance = modal.show({ title: " ", content });
+    const instance = modal.show({ title: "Удаление", content });
     content.querySelector("#cancel-del")?.addEventListener("click", () => instance.close());
     content.querySelector("#confirm-del")?.addEventListener("click", async () => {
       try {
         await apiDelete(`${ENDPOINTS.references.organizations}/${org.id_org}`);
-        toast.show(" ", "success");
+        toast.show("Готово", "success");
         instance.close();
         await this.load();
         this.renderTables();
@@ -666,21 +667,22 @@ export class ReferencesPage {
     });
   }
 
+
   openMarkModal(mark) {
     const isEdit = Boolean(mark);
     const form = document.createElement("form");
     form.className = "section";
     form.innerHTML = `
       <div class="md-field">
-        <label></label>
+        <label>Марка</label>
         <input class="md-input" name="mark_name" value="${mark?.mark_name || ""}" required>
       </div>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-mark">Отмена</button>
-        <button class="md-btn" type="submit">${isEdit ? "" : ""}</button>
+        <button class="md-btn" type="submit">Сохранить</button>
       </div>
     `;
-    const instance = modal.show({ title: isEdit ? " " : " ", content: form });
+    const instance = modal.show({ title: isEdit ? "Редактирование марки" : "Новая марка", content: form });
     form.querySelector("#cancel-mark")?.addEventListener("click", () => instance.close());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -688,10 +690,10 @@ export class ReferencesPage {
       try {
         if (isEdit) {
           await apiPatch(`${ENDPOINTS.references.marks}/${mark.id_mark}`, data);
-          toast.show(" ", "success");
+          toast.show("Марка сохранена", "success");
         } else {
           await apiPost(ENDPOINTS.references.marks, data);
-          toast.show(" ", "success");
+          toast.show("Марка добавлена", "success");
         }
         instance.close();
         await this.load();
@@ -706,18 +708,18 @@ export class ReferencesPage {
     const content = document.createElement("div");
     content.className = "section";
     content.innerHTML = `
-      <p>  <strong>${mark.mark_name}</strong>?</p>
+      <p>Удалить марку <strong>${mark.mark_name}</strong>?</p>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-del">Отмена</button>
         <button type="button" class="md-btn" id="confirm-del">Удалить</button>
       </div>
     `;
-    const instance = modal.show({ title: " ", content });
+    const instance = modal.show({ title: "Удаление", content });
     content.querySelector("#cancel-del")?.addEventListener("click", () => instance.close());
     content.querySelector("#confirm-del")?.addEventListener("click", async () => {
       try {
         await apiDelete(`${ENDPOINTS.references.marks}/${mark.id_mark}`);
-        toast.show(" ", "success");
+        toast.show("Готово", "success");
         instance.close();
         await this.load();
         this.renderTables();
@@ -727,28 +729,29 @@ export class ReferencesPage {
     });
   }
 
+
   openModelModal(model) {
     const isEdit = Boolean(model);
     const form = document.createElement("form");
     form.className = "section";
     form.innerHTML = `
       <div class="md-field">
-        <label></label>
+        <label>Марка</label>
         <select class="md-select" name="id_mark" required>
-          <option value=""> </option>
+          <option value="">Выберите марку</option>
           ${this.state.marks.map((m) => `<option value="${m.id_mark}" ${model?.id_mark === m.id_mark ? "selected":""}>${m.mark_name}</option>`).join("")}
         </select>
       </div>
       <div class="md-field">
-        <label></label>
+        <label>Модель</label>
         <input class="md-input" name="model_name" value="${model?.model_name || ""}" required>
       </div>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-model">Отмена</button>
-        <button class="md-btn" type="submit">${isEdit ? "" : ""}</button>
+        <button class="md-btn" type="submit">Сохранить</button>
       </div>
     `;
-    const instance = modal.show({ title: isEdit ? " " : " ", content: form });
+    const instance = modal.show({ title: isEdit ? "Редактирование модели" : "Новая модель", content: form });
     form.querySelector("#cancel-model")?.addEventListener("click", () => instance.close());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -757,10 +760,10 @@ export class ReferencesPage {
       try {
         if (isEdit) {
           await apiPatch(`${ENDPOINTS.references.models}/${model.id_model}`, { id_mark: data.id_mark, model_name: data.model_name });
-          toast.show(" ", "success");
+          toast.show("Модель сохранена", "success");
         } else {
           await apiPost(ENDPOINTS.references.models, { id_mark: data.id_mark, model_name: data.model_name });
-          toast.show(" ", "success");
+          toast.show("Модель добавлена", "success");
         }
         instance.close();
         await this.load();
@@ -771,6 +774,7 @@ export class ReferencesPage {
     });
   }
 
+
   openDriverModal(driver) {
     const isEdit = Boolean(driver);
     const form = document.createElement("form");
@@ -778,35 +782,35 @@ export class ReferencesPage {
     form.innerHTML = `
       <div class="form-grid">
         <div class="md-field">
-          <label></label>
+          <label>Фамилия</label>
           <input class="md-input" name="surname" value="${driver?.surname || ""}" required>
         </div>
         <div class="md-field">
-          <label></label>
+          <label>Имя</label>
           <input class="md-input" name="name" value="${driver?.name || ""}" required>
         </div>
         <div class="md-field">
-          <label></label>
+          <label>Отчество</label>
           <input class="md-input" name="otchestvo" value="${driver?.otchestvo || ""}">
         </div>
         <div class="md-field">
-          <label></label>
+          <label>Организация</label>
           <select class="md-select" name="id_org" required>
-            <option value=""> </option>
+            <option value="">Выберите организацию</option>
             ${this.state.orgs.map((o) => `<option value="${o.id_org}" ${String(driver?.id_org) === String(o.id_org) ? "selected":""}>${o.org_name}</option>`).join("")}
           </select>
         </div>
         <div class="md-field" style="grid-column:1/-1;">
-          <label></label>
+          <label>Информация</label>
           <input class="md-input" name="info" value="${driver?.info || ""}">
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-driver">Отмена</button>
-        <button class="md-btn" type="submit">${isEdit ? "" : ""}</button>
+        <button class="md-btn" type="submit">Сохранить</button>
       </div>
     `;
-    const instance = modal.show({ title: isEdit ? " " : " ", content: form });
+    const instance = modal.show({ title: isEdit ? "Редактирование водителя" : "Новый водитель", content: form });
     form.querySelector("#cancel-driver")?.addEventListener("click", () => instance.close());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -815,10 +819,10 @@ export class ReferencesPage {
       try {
         if (isEdit) {
           await apiPatch(`${ENDPOINTS.references.abonents}/${driver.id_fio}`, data);
-          toast.show(" ", "success");
+          toast.show("Водитель сохранён", "success");
         } else {
           await apiPost(ENDPOINTS.references.abonents, data);
-          toast.show(" ", "success");
+          toast.show("Водитель добавлен", "success");
         }
         instance.close();
         await this.load();
@@ -834,18 +838,18 @@ export class ReferencesPage {
     const content = document.createElement("div");
     content.className = "section";
     content.innerHTML = `
-      <p>  <strong>${fullName}</strong>?</p>
+      <p>Удалить водителя <strong>${fullName}</strong>?</p>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-del">Отмена</button>
         <button type="button" class="md-btn" id="confirm-del">Удалить</button>
       </div>
     `;
-    const instance = modal.show({ title: " ", content });
+    const instance = modal.show({ title: "Удаление", content });
     content.querySelector("#cancel-del")?.addEventListener("click", () => instance.close());
     content.querySelector("#confirm-del")?.addEventListener("click", async () => {
       try {
         await apiDelete(`${ENDPOINTS.references.abonents}/${driver.id_fio}`);
-        toast.show(" ", "success");
+        toast.show("Готово", "success");
         instance.close();
         await this.load();
         this.renderTables();
@@ -859,18 +863,18 @@ export class ReferencesPage {
     const content = document.createElement("div");
     content.className = "section";
     content.innerHTML = `
-      <p>  <strong>${model.model_name}</strong>?</p>
+      <p>Удалить модель <strong>${model.model_name}</strong>?</p>
       <div class="modal-footer">
         <button type="button" class="md-btn ghost" id="cancel-del">Отмена</button>
         <button type="button" class="md-btn" id="confirm-del">Удалить</button>
       </div>
     `;
-    const instance = modal.show({ title: " ", content });
+    const instance = modal.show({ title: "Удаление", content });
     content.querySelector("#cancel-del")?.addEventListener("click", () => instance.close());
     content.querySelector("#confirm-del")?.addEventListener("click", async () => {
       try {
         await apiDelete(`${ENDPOINTS.references.models}/${model.id_model}`);
-        toast.show(" ", "success");
+        toast.show("Готово", "success");
         instance.close();
         await this.load();
         this.renderTables();

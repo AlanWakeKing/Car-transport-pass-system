@@ -33,7 +33,7 @@ export class PrintPage {
     node.className = "section";
     node.innerHTML = `
       <div class="md-card section">
-        <div class="md-toolbar">
+        <div class="md-toolbar toolbar stack">
           <div>
             <p class="tag">Печать</p>
             <h3 style="margin:0;">Пропуска</h3>
@@ -45,7 +45,7 @@ export class PrintPage {
         </div>
         <div class="tab-panels">
           <div class="tab-panel active" data-tab="org">
-            <div class="md-toolbar">
+            <div class="md-toolbar toolbar stack">
               <div class="md-field" style="min-width:220px;">
                 <label>Организация</label>
                 <select class="md-select" id="org-select">
@@ -53,61 +53,73 @@ export class PrintPage {
                   ${this.state.orgs.map((o) => `<option value="${o.id_org}">${o.org_name}</option>`).join("")}
                 </select>
               </div>
-              <button class="md-btn secondary" id="print-org">
-                <span class="material-icons-round">picture_as_pdf</span>
-                PDF по организации
-              </button>
+              <div class="toolbar-actions">
+                <button class="md-btn secondary" id="print-org">
+                  <span class="material-icons-round">picture_as_pdf</span>
+                  PDF по организации
+                </button>
+              </div>
             </div>
-            <div class="table-scroll">
-              <table class="md-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Госномер</th>
-                    <th>Марка/Модель</th>
-                    <th>ФИО</th>
-                    <th>Статус</th>
-                    <th>До</th>
-                  </tr>
-                </thead>
-                <tbody id="org-propusk-rows"></tbody>
-              </table>
+            <div class="table-wrap desktop-only">
+              <div class="table-scroll">
+                <table class="md-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Госномер</th>
+                      <th>Марка/модель</th>
+                      <th>ФИО</th>
+                      <th>Статус</th>
+                      <th>До</th>
+                    </tr>
+                  </thead>
+                  <tbody id="org-propusk-rows"></tbody>
+                </table>
+              </div>
             </div>
+            <div class="mobile-cards mobile-only" id="org-propusk-cards"></div>
           </div>
           <div class="tab-panel" data-tab="props">
-            <div class="md-toolbar">
+            <div class="md-toolbar toolbar stack">
               <div>
                 <p class="tag">Множественный выбор</p>
                 <h4 style="margin:0;">Пропуска</h4>
               </div>
-              <button class="md-btn secondary" id="print-selected">
-                <span class="material-icons-round">picture_as_pdf</span>
-                Печать выбранных
-              </button>
+              <div class="toolbar-actions">
+                <button class="md-btn secondary" id="print-selected">
+                  <span class="material-icons-round">picture_as_pdf</span>
+                  Печать выбранных
+                </button>
+              </div>
             </div>
-            <div class="table-scroll">
-              <table class="md-table">
-                <thead>
-                  <tr>
-                    <th><input type="checkbox" id="select-all"></th>
-                    <th>ID</th>
-                    <th>Госномер</th>
-                    <th>Компания</th>
-                    <th>ФИО</th>
-                    <th>Статус</th>
-                    <th>До</th>
-                  </tr>
-                </thead>
-                <tbody id="propusk-rows"></tbody>
-              </table>
+            <div class="table-wrap desktop-only">
+              <div class="table-scroll">
+                <table class="md-table">
+                  <thead>
+                    <tr>
+                      <th><input type="checkbox" id="select-all"></th>
+                      <th>ID</th>
+                      <th>Госномер</th>
+                      <th>Компания</th>
+                      <th>ФИО</th>
+                      <th>Статус</th>
+                      <th>До</th>
+                    </tr>
+                  </thead>
+                  <tbody id="propusk-rows"></tbody>
+                </table>
+              </div>
             </div>
+            <div class="mobile-cards mobile-only" id="propusk-cards"></div>
           </div>
         </div>
       </div>
     `;
 
     this.renderOrgRows(node.querySelector("#org-propusk-rows"));
+    this.renderOrgCards(node.querySelector("#org-propusk-cards"));
     this.renderPropuskRows(node.querySelector("#propusk-rows"));
+    this.renderPropuskCards(node.querySelector("#propusk-cards"));
     this.bind(node);
     return node;
   }
@@ -136,6 +148,37 @@ export class PrintPage {
       .join("");
   }
 
+  renderOrgCards(container) {
+    if (!container) return;
+    const filtered = this.state.propusks.filter((p) =>
+      this.state.selectedOrg ? String(p.id_org) === String(this.state.selectedOrg) : false
+    );
+    if (!filtered.length) {
+      container.innerHTML = `<div class="empty">Выберите организацию</div>`;
+      return;
+    }
+    container.innerHTML = filtered
+      .map(
+        (p) => `
+          <div class="mobile-card">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${p.gos_id}</div>
+                <div class="mobile-card-subtitle">ID ${p.id_propusk}</div>
+              </div>
+              <div>${renderStatusChip(p.status)}</div>
+            </div>
+            <div class="mobile-card-meta">
+              <div class="mobile-card-row"><span>Марка/модель</span><span>${(p.mark_name || "")} ${(p.model_name || "")}</span></div>
+              <div class="mobile-card-row"><span>ФИО</span><span>${p.abonent_fio || "-"}</span></div>
+              <div class="mobile-card-row"><span>До</span><span>${p.valid_until || "-"}</span></div>
+            </div>
+          </div>
+        `
+      )
+      .join("");
+  }
+
   renderPropuskRows(tbody) {
     if (!this.state.propusks.length) {
       tbody.innerHTML = `<tr><td colspan="7"><div class="empty">Нет данных</div></td></tr>`;
@@ -158,6 +201,37 @@ export class PrintPage {
       .join("");
   }
 
+  renderPropuskCards(container) {
+    if (!container) return;
+    if (!this.state.propusks.length) {
+      container.innerHTML = `<div class="empty">Нет данных</div>`;
+      return;
+    }
+    container.innerHTML = this.state.propusks
+      .map(
+        (p) => `
+          <div class="mobile-card">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${p.gos_id}</div>
+                <div class="mobile-card-subtitle">ID ${p.id_propusk}</div>
+              </div>
+              <label style="display:flex; align-items:center; gap:0.4rem;">
+                <input type="checkbox" data-id="${p.id_propusk}" ${this.state.selectedIds.has(p.id_propusk) ? "checked" : ""}>
+                <span>${renderStatusChip(p.status)}</span>
+              </label>
+            </div>
+            <div class="mobile-card-meta">
+              <div class="mobile-card-row"><span>Компания</span><span>${p.org_name || "—"}</span></div>
+              <div class="mobile-card-row"><span>ФИО</span><span>${p.abonent_fio || "—"}</span></div>
+              <div class="mobile-card-row"><span>До</span><span>${p.valid_until || "—"}</span></div>
+            </div>
+          </div>
+        `
+      )
+      .join("");
+  }
+
   bind(node) {
     const tabs = node.querySelector("#print-tabs");
     tabs?.addEventListener("click", (e) => {
@@ -171,6 +245,7 @@ export class PrintPage {
     node.querySelector("#org-select")?.addEventListener("change", (e) => {
       this.state.selectedOrg = e.target.value;
       this.renderOrgRows(node.querySelector("#org-propusk-rows"));
+      this.renderOrgCards(node.querySelector("#org-propusk-cards"));
     });
 
     node.querySelector("#print-org")?.addEventListener("click", async () => {
@@ -189,6 +264,15 @@ export class PrintPage {
       else this.state.selectedIds.delete(id);
     });
 
+    node.querySelector("#propusk-cards")?.addEventListener("change", (e) => {
+      const cb = e.target;
+      if (cb.type !== "checkbox") return;
+      const id = Number(cb.dataset.id);
+      if (cb.checked) this.state.selectedIds.add(id);
+      else this.state.selectedIds.delete(id);
+      this.renderPropuskRows(node.querySelector("#propusk-rows"));
+    });
+
     node.querySelector("#select-all")?.addEventListener("change", (e) => {
       const checked = e.target.checked;
       this.state.selectedIds.clear();
@@ -198,6 +282,7 @@ export class PrintPage {
           .forEach((p) => this.state.selectedIds.add(p.id_propusk));
       }
       this.renderPropuskRows(node.querySelector("#propusk-rows"));
+      this.renderPropuskCards(node.querySelector("#propusk-cards"));
     });
 
     node.querySelector("#print-selected")?.addEventListener("click", async () => {
