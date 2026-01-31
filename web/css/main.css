@@ -43,6 +43,14 @@
   min-height: 100vh;
 }
 
+.bottom-nav {
+  display: none;
+}
+
+.bottom-sheet {
+  display: none;
+}
+
 .sidebar {
   position: sticky;
   top: 0;
@@ -93,6 +101,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: 0;
 }
 
 .grid {
@@ -106,6 +115,68 @@
 
 .grid.three {
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
+.mobile-cards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mobile-card {
+  border: 1px solid var(--md-border);
+  border-radius: 14px;
+  padding: 0.85rem 0.9rem;
+  background: #fff;
+  box-shadow: var(--md-shadow-soft);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.mobile-card-title {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.mobile-card-subtitle {
+  color: var(--md-text-muted);
+  font-size: 0.85rem;
+}
+
+.mobile-card-meta {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.mobile-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.mobile-card-row span:first-child {
+  color: var(--md-text-muted);
+}
+
+.mobile-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .stat-card {
@@ -290,6 +361,11 @@
 
 .table-scroll {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.md-table {
+  min-width: 720px;
 }
 
 .page-title {
@@ -549,31 +625,17 @@
   .layout {
     grid-template-columns: 1fr;
   }
+  main {
+    min-width: 0;
+  }
   .sidebar {
-    position: sticky;
-    top: 0;
-    height: auto;
-    padding: 1rem;
-    border-right: none;
-    border-bottom: 1px solid var(--md-border);
-    z-index: 10;
-  }
-  .sidebar .menu {
-    flex-direction: row;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 0.4rem;
-    scrollbar-width: thin;
-  }
-  .menu-item {
-    flex: 0 0 auto;
-    white-space: nowrap;
+    display: none;
   }
   .header {
     padding: 1.1rem 1rem 0.5rem 1rem;
   }
   .content {
-    padding: 0.75rem 1rem 1.5rem 1rem;
+    padding: 0.75rem 1rem 4.5rem 1rem;
   }
   .page-title {
     align-items: flex-start;
@@ -593,6 +655,114 @@
   }
   .propusk-edit-grid {
     grid-template-columns: 1fr;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: grid !important;
+  }
+
+  .grid.three.stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #fff;
+    border-top: 1px solid var(--md-border);
+    z-index: 20;
+  }
+
+  .bottom-nav-item {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.4rem 0.3rem;
+    border-radius: 12px;
+    color: var(--md-text-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .bottom-nav-item .material-icons-round {
+    font-size: 20px;
+  }
+
+  .bottom-nav-item.active {
+    color: var(--md-primary-variant);
+    background: rgba(30, 136, 229, 0.1);
+  }
+
+  .bottom-sheet {
+    position: fixed;
+    inset: 0;
+    display: none;
+    z-index: 30;
+  }
+
+  .bottom-sheet.open {
+    display: block;
+  }
+
+  .bottom-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+  }
+
+  .bottom-sheet-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    padding: 1rem;
+    box-shadow: 0 -10px 24px rgba(15, 23, 42, 0.12);
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .bottom-sheet-header {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .bottom-sheet-menu {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .bottom-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 12px;
+    border: 1px solid var(--md-border);
+    background: #fff;
+    font-weight: 600;
+    color: var(--md-text);
+    cursor: pointer;
+  }
+
+  .bottom-sheet-item .material-icons-round {
+    font-size: 20px;
   }
 }
 
@@ -634,4 +804,19 @@
   .md-table td {
     padding: 0.65rem 0.5rem;
   }
+  .page-title h1 {
+    font-size: 1.4rem;
+    line-height: 1.25;
+  }
+  .page-title .tag {
+    font-size: 0.8rem;
+  }
+}
+.app-surface {
+  overflow-x: hidden;
+}
+
+html,
+body {
+  overflow-x: hidden;
 }

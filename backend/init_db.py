@@ -67,9 +67,11 @@ def show_tables_info():
         ("propusk_archive", "Архив отозванных пропусков"),
         ("propusk_history", "История изменений пропусков"),
         ("tg_sessions", "Telegram сессии"),
-                ("propusk_template",
-        ("report_template", "??????? PDF ???????"),
-         "??????? PDF-?????????"),
+        ("temporary_pass", "Временные пропуска"),
+        ("temporary_pass_template", "Шаблон PDF временного пропуска"),
+        ("temporary_pass_report_template", "Шаблон отчёта временных пропусков"),
+        ("propusk_template", "Шаблон PDF-пропуска"),
+        ("report_template", "Шаблон PDF-отчёта"),
         ("notifications_log", "Лог уведомлений"),
     ]
     

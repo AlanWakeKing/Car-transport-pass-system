@@ -778,11 +778,11 @@ export class SettingsPage {
     host.innerHTML = `
       <div class="form-grid">
         <div class="md-field">
-          <label>X (??)</label>
+          <label>X (мм)</label>
           <input class="md-input" data-field="x" type="number" value="${el.x}">
         </div>
         <div class="md-field">
-          <label>Y (??)</label>
+          <label>Y (мм)</label>
           <input class="md-input" data-field="y" type="number" value="${el.y}">
         </div>
         <div class="md-field">

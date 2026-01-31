@@ -292,7 +292,7 @@ class TemporaryPassReportTemplate(Base):
         except Exception:
             return {}
 
-# 13. ??????? PDF-?????????
+# 13. Шаблон PDF-пропуска
 class PropuskTemplate(Base):
     __tablename__ = "propusk_template"
 

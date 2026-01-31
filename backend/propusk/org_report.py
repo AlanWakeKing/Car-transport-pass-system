@@ -33,7 +33,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 7,
             "width": 90,
             "height": 6,
-            "text": "???????? ? ????????",
+            "text": "Отчет по организации",
             "font_size": 10,
             "align": "left",
             "color": "#111827",
@@ -45,7 +45,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 18,
             "width": 35,
             "height": 6,
-            "text": "????????",
+            "text": "Организация",
             "font_size": 8,
             "align": "left",
             "color": "#111827",
@@ -69,7 +69,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 25,
             "width": 35,
             "height": 6,
-            "text": "???????? ?????",
+            "text": "Гостевых мест",
             "font_size": 8,
             "align": "left",
             "color": "#111827",
@@ -93,7 +93,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 32,
             "width": 35,
             "height": 6,
-            "text": "?????????? ?????",
+            "text": "Постоянных мест",
             "font_size": 8,
             "align": "left",
             "color": "#111827",
@@ -139,7 +139,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 41,
             "width": 20,
             "height": 6,
-            "text": "? ??????????",
+            "text": "№ пропуска",
             "font_size": 7,
             "align": "left",
             "color": "#111827",
@@ -151,7 +151,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 41,
             "width": 25,
             "height": 6,
-            "text": "????? ?/?",
+            "text": "Марка а/м",
             "font_size": 7,
             "align": "left",
             "color": "#111827",
@@ -163,7 +163,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 41,
             "width": 30,
             "height": 6,
-            "text": "???????? ?/?",
+            "text": "Госномер а/м",
             "font_size": 7,
             "align": "left",
             "color": "#111827",
@@ -175,7 +175,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 41,
             "width": 60,
             "height": 6,
-            "text": "???",
+            "text": "ФИО",
             "font_size": 7,
             "align": "left",
             "color": "#111827",
@@ -187,7 +187,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 41,
             "width": 70,
             "height": 6,
-            "text": "??????????",
+            "text": "Примечание",
             "font_size": 7,
             "align": "left",
             "color": "#111827",
@@ -199,7 +199,7 @@ DEFAULT_REPORT_TEMPLATE = {
             "y": 41,
             "width": 40,
             "height": 6,
-            "text": "???????",
+            "text": "Подпись",
             "font_size": 7,
             "align": "left",
             "color": "#111827",
@@ -358,7 +358,7 @@ def _draw_table(c, propusks, table_rect, page_height, font_regular, font_bold):
         draw_grid(1)
         c.setFont(font_regular, 8)
         c.setFillColorRGB(0, 0, 0)
-        c.drawCentredString(x + (w_mm * mm) / 2, y_top - 5 * mm, "??? ??????")
+        c.drawCentredString(x + (w_mm * mm) / 2, y_top - 5 * mm, "Нет данных")
         return
 
     rows = propusks[:rows_per_page]

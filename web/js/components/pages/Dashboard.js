@@ -1,4 +1,4 @@
-import { ENDPOINTS } from "../../config/constants.js";
+﻿import { ENDPOINTS } from "../../config/constants.js";
 import { apiGet, handleError } from "../../api/client.js";
 import { renderStatusChip } from "../../utils/statusConfig.js";
 import { canShowMenuPropusks } from "../../utils/permissions.js";
@@ -34,7 +34,7 @@ export class DashboardPage {
     const container = document.createElement("div");
     container.className = "section";
     container.innerHTML = `
-      <div class="grid three" id="stat-grid"></div>
+      <div class="grid three stat-grid" id="stat-grid"></div>
       <div class="md-card">
         <div class="md-toolbar">
           <div>
@@ -43,20 +43,23 @@ export class DashboardPage {
           </div>
         </div>
         <div class="md-divider"></div>
-        <div class="table-scroll">
-          <table class="md-table" id="recent-table">
-            <thead>
-              <tr>
-                <th>Госномер</th>
-                <th>Компания</th>
-                <th>Водитель</th>
-                <th>Статус</th>
-                <th>До</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <div class="table-wrap desktop-only">
+          <div class="table-scroll">
+            <table class="md-table" id="recent-table">
+              <thead>
+                <tr>
+                  <th>Госномер</th>
+                  <th>Компания</th>
+                  <th>Водитель</th>
+                  <th>Статус</th>
+                  <th>До</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
+        <div class="mobile-cards mobile-only" id="recent-cards"></div>
       </div>
     `;
 
@@ -64,6 +67,7 @@ export class DashboardPage {
     const data = await this.loadData(canAccess);
     this.renderStats(container.querySelector("#stat-grid"), data, canAccess);
     this.renderTable(container.querySelector("#recent-table tbody"), data.propusks, canAccess);
+    this.renderCards(container.querySelector("#recent-cards"), data.propusks, canAccess);
     return container;
   }
 
@@ -72,7 +76,7 @@ export class DashboardPage {
       const card = e.target.closest("[data-status]");
       if (!card) return;
       if (!canAccess) {
-        toast.show("Отсутствует доступ", "error");
+        toast.show("Недостаточно прав", "error");
         return;
       }
       const status = card.dataset.status;
@@ -93,7 +97,7 @@ export class DashboardPage {
         <div class="stat-value">${value}</div>
         <div class="stat-meta">
           <span class="material-icons-round" style="color:var(--md-${tone});">${icon}</span>
-          <span>Нажмите, чтобы открыть фильтрованный список</span>
+          <span>Нажмите, чтобы открыть отфильтрованный список</span>
         </div>
       </div>
     `;
@@ -101,7 +105,7 @@ export class DashboardPage {
 
   renderTable(tbody, propusks, canAccess) {
     if (!canAccess) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">Отсутствует доступ</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">Недостаточно прав</div></td></tr>`;
       return;
     }
     if (!propusks.length) {
@@ -123,4 +127,39 @@ export class DashboardPage {
       )
       .join("");
   }
+
+  renderCards(container, propusks, canAccess) {
+    if (!container) return;
+    if (!canAccess) {
+      container.innerHTML = `<div class="empty">Недостаточно прав</div>`;
+      return;
+    }
+    if (!propusks.length) {
+      container.innerHTML = `<div class="empty">Нет записей</div>`;
+      return;
+    }
+    container.innerHTML = propusks
+      .map(
+        (p) => `
+          <div class="mobile-card">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${p.gos_id}</div>
+                <div class="mobile-card-subtitle">ID ${p.id_propusk}</div>
+              </div>
+              <div>${renderStatusChip(p.status)}</div>
+            </div>
+            <div class="mobile-card-meta">
+              <div class="mobile-card-row"><span>Компания</span><span>${p.org_name || "-"}</span></div>
+              <div class="mobile-card-row"><span>Водитель</span><span>${p.abonent_fio || "-"}</span></div>
+              <div class="mobile-card-row"><span>До</span><span>${p.valid_until || "-"}</span></div>
+            </div>
+          </div>
+        `
+      )
+      .join("");
+  }
 }
+
+
+
