@@ -10,7 +10,9 @@ const CORE_ASSETS = [
   "./js/telegram-auth.js",
   "./pwa/icon-192.png",
   "./pwa/icon-512.png",
-  "./pwa/icon-180.png"
+  "./pwa/icon-180.png",
+  "./pwa/icon-192-maskable.png",
+  "./pwa/icon-512-maskable.png"
 ];
 
 self.addEventListener("install", (event) => {

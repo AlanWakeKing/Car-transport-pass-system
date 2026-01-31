@@ -2,9 +2,11 @@
   "name": "Пропуска автотранспорта",
   "short_name": "Пропуска",
   "description": "Система пропусков для автотранспорта",
-  "start_url": "./index.html",
-  "scope": "./",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "background_color": "#eef2f7",
   "theme_color": "#1e88e5",
   "icons": [
@@ -17,6 +19,18 @@
       "src": "./pwa/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "./pwa/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./pwa/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
