@@ -46,7 +46,20 @@ async function request(path, options = {}) {
   const resp = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: "include" });
 
   if (resp.status === 401) {
-    throw new Error("Требуется вход. Авторизация истекла.");
+    let detail = "Сессия истекла. Войдите снова.";
+    const raw = await resp.text();
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        detail = data.detail || JSON.stringify(data);
+      } catch {
+        detail = raw;
+      }
+    }
+    window.dispatchEvent(
+      new CustomEvent("auth-expired", { detail: { message: detail } })
+    );
+    throw new Error(detail);
   }
 
   if (!resp.ok) {
@@ -119,16 +132,36 @@ export async function downloadFile(path, filename = "file") {
 export async function openFileInNewTab(path) {
   const headers = {};
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
-  const resp = await fetch(`${API_BASE}${path}`, { headers, credentials: "include" });
-  if (!resp.ok) {
-    let detail = await resp.text();
-    throw new Error(detail || "Не удалось скачать файл");
+  // Open window synchronously to avoid popup blockers in PWA.
+  const popup = window.open("", "_blank", "noopener");
+  try {
+    const resp = await fetch(`${API_BASE}${path}`, { headers, credentials: "include" });
+    if (!resp.ok) {
+      let detail = await resp.text();
+      throw new Error(detail || "Не удалось скачать файл");
+    }
+    const disposition = resp.headers.get("content-disposition") || "";
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    if (popup && !popup.closed) {
+      popup.location = url;
+    } else {
+      // Fallback: download if popup is blocked/unavailable.
+      const nameMatch = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
+      const filename = nameMatch ? decodeURIComponent(nameMatch[1]) : "report.pdf";
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+    // do not revoke immediately, allow browser to load
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (err) {
+    if (popup) popup.close();
+    throw err;
   }
-  const blob = await resp.blob();
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank", "noopener");
-  // РЅРµ revoke СЃСЂР°Р·Сѓ, РґР°РґРёРј Р±СЂР°СѓР·РµСЂСѓ РѕС‚РєСЂС‹С‚СЊ
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 export async function downloadPost(path, body, filename = "file.pdf") {
@@ -162,20 +195,40 @@ export async function openPostInNewTab(path, body) {
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
   addCsrfHeader(headers);
   headers["Content-Type"] = "application/json";
-  const resp = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body || {}),
-    credentials: "include"
-  });
-  if (!resp.ok) {
-    let detail = await resp.text();
-    throw new Error(detail || "Не удалось открыть файл");
+  // Open window synchronously to avoid popup blockers in PWA.
+  const popup = window.open("", "_blank", "noopener");
+  try {
+    const resp = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body || {}),
+      credentials: "include"
+    });
+    if (!resp.ok) {
+      let detail = await resp.text();
+      throw new Error(detail || "Не удалось открыть файл");
+    }
+    const disposition = resp.headers.get("content-disposition") || "";
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    if (popup && !popup.closed) {
+      popup.location = url;
+    } else {
+      // Fallback: download if popup is blocked/unavailable.
+      const nameMatch = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
+      const filename = nameMatch ? decodeURIComponent(nameMatch[1]) : "report.pdf";
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (err) {
+    if (popup) popup.close();
+    throw err;
   }
-  const blob = await resp.blob();
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank", "noopener");
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 

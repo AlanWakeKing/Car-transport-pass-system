@@ -147,5 +147,22 @@ function registerServiceWorker() {
   });
 }
 
+function registerAuthExpiredHandler() {
+  let handling = false;
+  window.addEventListener("auth-expired", async (event) => {
+    if (handling) return;
+    handling = true;
+    const message = event?.detail?.message || "Сессия истекла. Войдите снова.";
+    try {
+      await context.logout();
+    } finally {
+      await showLogin();
+      toast.show(message, "warning");
+      handling = false;
+    }
+  });
+}
+
 registerServiceWorker();
+registerAuthExpiredHandler();
 bootstrap();
