@@ -51,6 +51,82 @@ class TemporaryPassService:
         return "active"
 
     @staticmethod
+    def _get_pass_or_404(db: Session, pass_id: int) -> TemporaryPass:
+        temp_pass = (
+            db.query(TemporaryPass)
+            .filter(TemporaryPass.id == pass_id)
+            .first()
+        )
+        if not temp_pass:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Временный пропуск не найден",
+            )
+        return temp_pass
+
+    @staticmethod
+    def _holds_guest_slot(item: TemporaryPass) -> bool:
+        return item.revoked_at is None
+
+    @staticmethod
+    def _release_guest_slot_if_needed(item: TemporaryPass) -> None:
+        if TemporaryPassService._holds_guest_slot(item) and item.organization:
+            TemporaryPassService._change_free_mesto(item.organization, 1)
+
+    @staticmethod
+    def _ensure_can_enter(item: TemporaryPass, now: datetime) -> None:
+        state = TemporaryPassService._compute_status(item, now)
+        if state == "revoked":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нельзя отметить въезд для отозванного временного пропуска",
+            )
+        if state == "expired":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нельзя отметить въезд для просроченного временного пропуска",
+            )
+        if item.valid_from and now < item.valid_from:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Временный пропуск ещё не начал действовать",
+            )
+        if item.entered_at and not item.exited_at:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Въезд уже отмечен",
+            )
+        if item.exited_at:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нельзя отметить въезд после выезда",
+            )
+
+    @staticmethod
+    def _ensure_can_exit(item: TemporaryPass, now: datetime) -> None:
+        state = TemporaryPassService._compute_status(item, now)
+        if state == "revoked":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нельзя отметить выезд для отозванного временного пропуска",
+            )
+        if state == "expired":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нельзя отметить выезд для просроченного временного пропуска",
+            )
+        if not item.entered_at:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нельзя отметить выезд без отметки въезда",
+            )
+        if item.exited_at:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Выезд уже отмечен",
+            )
+
+    @staticmethod
     def _ensure_business_hours(now: datetime) -> tuple[datetime, datetime]:
         start_dt, end_dt = TemporaryPassService._get_today_window(now)
         if now < start_dt or now >= end_dt:
@@ -138,58 +214,34 @@ class TemporaryPassService:
         user_id: int,
         comment: Optional[str] = None,
     ) -> TemporaryPass:
-        temp_pass = (
-            db.query(TemporaryPass)
-            .filter(TemporaryPass.id == pass_id)
-            .first()
-        )
-        if not temp_pass:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Временный пропуск не найден",
-            )
+        temp_pass = TemporaryPassService._get_pass_or_404(db, pass_id)
         if temp_pass.revoked_at:
-            return temp_pass
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Временный пропуск уже отозван",
+            )
+        TemporaryPassService._release_guest_slot_if_needed(temp_pass)
         temp_pass.revoked_at = TemporaryPassService._now()
         temp_pass.revoked_by = user_id
         if comment:
             temp_pass.comment = comment
-        if temp_pass.organization:
-            TemporaryPassService._change_free_mesto(temp_pass.organization, 1)
         db.commit()
         db.refresh(temp_pass)
         return temp_pass
 
     @staticmethod
     def delete_pass(db: Session, pass_id: int) -> None:
-        temp_pass = (
-            db.query(TemporaryPass)
-            .filter(TemporaryPass.id == pass_id)
-            .first()
-        )
-        if not temp_pass:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Временный пропуск не найден",
-            )
+        temp_pass = TemporaryPassService._get_pass_or_404(db, pass_id)
+        TemporaryPassService._release_guest_slot_if_needed(temp_pass)
         db.delete(temp_pass)
         db.commit()
 
     @staticmethod
     def mark_enter(db: Session, pass_id: int, user_id: int) -> TemporaryPass:
-        temp_pass = (
-            db.query(TemporaryPass)
-            .filter(TemporaryPass.id == pass_id)
-            .first()
-        )
-        if not temp_pass:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Временный пропуск не найден",
-            )
-        if temp_pass.entered_at:
-            return temp_pass
-        temp_pass.entered_at = TemporaryPassService._now()
+        temp_pass = TemporaryPassService._get_pass_or_404(db, pass_id)
+        now = TemporaryPassService._now()
+        TemporaryPassService._ensure_can_enter(temp_pass, now)
+        temp_pass.entered_at = now
         temp_pass.entered_by = user_id
         db.commit()
         db.refresh(temp_pass)
@@ -197,29 +249,14 @@ class TemporaryPassService:
 
     @staticmethod
     def mark_exit(db: Session, pass_id: int, user_id: int) -> TemporaryPass:
-        temp_pass = (
-            db.query(TemporaryPass)
-            .filter(TemporaryPass.id == pass_id)
-            .first()
-        )
-        if not temp_pass:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Временный пропуск не найден",
-            )
-        if temp_pass.exited_at:
-            return temp_pass
-        if not temp_pass.entered_at:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Нельзя отметить выезд без отметки въезда",
-            )
-        temp_pass.exited_at = TemporaryPassService._now()
+        temp_pass = TemporaryPassService._get_pass_or_404(db, pass_id)
+        now = TemporaryPassService._now()
+        TemporaryPassService._ensure_can_exit(temp_pass, now)
+        TemporaryPassService._release_guest_slot_if_needed(temp_pass)
+        temp_pass.exited_at = now
         temp_pass.exited_by = user_id
         temp_pass.revoked_at = temp_pass.exited_at
         temp_pass.revoked_by = user_id
-        if temp_pass.organization:
-            TemporaryPassService._change_free_mesto(temp_pass.organization, 1)
         db.commit()
         db.refresh(temp_pass)
         return temp_pass
