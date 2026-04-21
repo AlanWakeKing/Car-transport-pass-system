@@ -191,7 +191,8 @@ class TemporaryPassReportGenerator:
 
                 base_x = (table_x + row_offset_x_mm * mm) if template_data else margin
                 text_y = current_row_top - row_text_offset_mm * mm
-                c.drawString(base_x, text_y, str(item.id))
+                pass_id = getattr(item, "temp_pass_id", None) or item.id
+                c.drawString(base_x, text_y, str(pass_id))
                 c.drawString(base_x + 10 * mm, text_y, _truncate(creator_name, 12))
                 c.drawString(base_x + 40 * mm, text_y, _truncate(enter_name, 12))
                 c.drawString(base_x + 70 * mm, text_y, _truncate(exit_name, 12))

@@ -64,6 +64,10 @@ export function canDownloadTempPass(user) {
   return hasPermission(user, "temp_download");
 }
 
+export function canArchiveTempPass(user) {
+  return user?.role === "admin";
+}
+
 export function canShowMenuPropusks(user) {
   return hasMenuPermission(user, "menu_propusks");
 }

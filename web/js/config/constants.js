@@ -32,5 +32,8 @@ export const ENDPOINTS = {
   propusksStats: "/api/propusk/stats",
   propusksPaged: "/api/propusk/paged",
   temporaryPasses: "/api/temporary-pass",
-  temporaryPassesReport: "/api/temporary-pass/reports/all/pdf"
+  temporaryPassesReport: "/api/temporary-pass/reports/all/pdf",
+  temporaryPassesArchive: "/api/temporary-pass/archive",
+  temporaryPassesArchiveMonth: "/api/temporary-pass/archive/month",
+  temporaryPassesArchiveReport: "/api/temporary-pass/archive/reports/month/pdf"
 };

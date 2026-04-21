@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi import HTTPException, status
 
-from models import TemporaryPass, Organiz
+from models import TemporaryPass, TemporaryPassArchive, Organiz
 from config import settings
 
 
@@ -30,6 +30,25 @@ class TemporaryPassService:
         start_dt = datetime.combine(day, TemporaryPassService.START_TIME, tzinfo=tz)
         end_dt = datetime.combine(day, TemporaryPassService.END_TIME, tzinfo=tz)
         return start_dt, end_dt
+
+    @staticmethod
+    def _get_month_range(year: int, month: int, tzinfo) -> tuple[datetime, datetime]:
+        start = datetime(year, month, 1, tzinfo=tzinfo)
+        if month == 12:
+            end = datetime(year + 1, 1, 1, tzinfo=tzinfo)
+        else:
+            end = datetime(year, month + 1, 1, tzinfo=tzinfo)
+        return start, end
+
+    @staticmethod
+    def _compute_status(item: TemporaryPass, now: datetime) -> str:
+        if item.revoked_at:
+            return "revoked"
+        if item.valid_until and now > item.valid_until:
+            return "expired"
+        if item.entered_at and not item.exited_at:
+            return "on_territory"
+        return "active"
 
     @staticmethod
     def _ensure_business_hours(now: datetime) -> tuple[datetime, datetime]:
@@ -300,3 +319,109 @@ class TemporaryPassService:
             )
         total = query.scalar()
         return int(total or 0)
+
+    @staticmethod
+    def archive_month(db: Session, year: int, month: int, archived_by: int) -> int:
+        now = TemporaryPassService._now()
+        start, end = TemporaryPassService._get_month_range(year, month, now.tzinfo)
+        items = (
+            db.query(TemporaryPass)
+            .filter(
+                TemporaryPass.created_at >= start,
+                TemporaryPass.created_at < end,
+            )
+            .all()
+        )
+        if not items:
+            return 0
+        archives = []
+        for item in items:
+            archives.append(
+                TemporaryPassArchive(
+                    temp_pass_id=item.id,
+                    gos_id=item.gos_id,
+                    id_org=item.id_org,
+                    phone=item.phone,
+                    valid_from=item.valid_from,
+                    valid_until=item.valid_until,
+                    created_by=item.created_by,
+                    created_at=item.created_at,
+                    revoked_at=item.revoked_at,
+                    revoked_by=item.revoked_by,
+                    entered_at=item.entered_at,
+                    exited_at=item.exited_at,
+                    entered_by=item.entered_by,
+                    exited_by=item.exited_by,
+                    comment=item.comment,
+                    status=TemporaryPassService._compute_status(item, now),
+                    archived_by=archived_by,
+                )
+            )
+        db.add_all(archives)
+        for item in items:
+            db.delete(item)
+        db.commit()
+        return len(archives)
+
+    @staticmethod
+    def list_archive(
+        db: Session,
+        year: int,
+        month: int,
+        gos_id: Optional[str] = None,
+        id_org: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> List[TemporaryPassArchive]:
+        now = TemporaryPassService._now()
+        start, end = TemporaryPassService._get_month_range(year, month, now.tzinfo)
+        query = db.query(TemporaryPassArchive).filter(
+            TemporaryPassArchive.created_at >= start,
+            TemporaryPassArchive.created_at < end,
+        )
+        if id_org:
+            query = query.filter(TemporaryPassArchive.id_org == id_org)
+        if gos_id:
+            query = query.filter(TemporaryPassArchive.gos_id.ilike(f"%{gos_id}%"))
+        return query.order_by(TemporaryPassArchive.created_at.desc()).offset(skip).limit(limit).all()
+
+    @staticmethod
+    def count_archive(
+        db: Session,
+        year: int,
+        month: int,
+        gos_id: Optional[str] = None,
+        id_org: Optional[int] = None,
+    ) -> int:
+        now = TemporaryPassService._now()
+        start, end = TemporaryPassService._get_month_range(year, month, now.tzinfo)
+        query = db.query(func.count(TemporaryPassArchive.id)).filter(
+            TemporaryPassArchive.created_at >= start,
+            TemporaryPassArchive.created_at < end,
+        )
+        if id_org:
+            query = query.filter(TemporaryPassArchive.id_org == id_org)
+        if gos_id:
+            query = query.filter(TemporaryPassArchive.gos_id.ilike(f"%{gos_id}%"))
+        total = query.scalar()
+        return int(total or 0)
+
+    @staticmethod
+    def list_archive_all(
+        db: Session,
+        year: int,
+        month: int,
+        gos_id: Optional[str] = None,
+        id_org: Optional[int] = None,
+    ) -> List[TemporaryPassArchive]:
+        now = TemporaryPassService._now()
+        start, end = TemporaryPassService._get_month_range(year, month, now.tzinfo)
+        query = db.query(TemporaryPassArchive).filter(
+            TemporaryPassArchive.created_at >= start,
+            TemporaryPassArchive.created_at < end,
+        )
+        if id_org:
+            query = query.filter(TemporaryPassArchive.id_org == id_org)
+        if gos_id:
+            query = query.filter(TemporaryPassArchive.gos_id.ilike(f"%{gos_id}%"))
+        return query.order_by(TemporaryPassArchive.created_at.desc()).all()

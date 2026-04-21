@@ -14,7 +14,7 @@ import { toast } from "../common/Toast.js";
 
 
 
-import { canCreateTempPass, canDeleteTempPass, canDownloadTempPass } from "../../utils/permissions.js";
+import { canCreateTempPass, canDeleteTempPass, canDownloadTempPass, canArchiveTempPass } from "../../utils/permissions.js";
 
 
 
@@ -54,7 +54,21 @@ export class TemporaryPassesPage {
 
 
 
-      pagination: { page: 1, limit: 50, total: 0 }
+      pagination: { page: 1, limit: 50, total: 0 },
+
+      tab: "active",
+
+      archive: {
+
+        items: [],
+
+        month: "",
+
+        filters: { gos_id: "", id_org: "" },
+
+        pagination: { page: 1, limit: 50, total: 0 }
+
+      }
 
 
 
@@ -93,6 +107,12 @@ export class TemporaryPassesPage {
       this.state.filters = { ...this.state.filters, ...storedFilters };
 
 
+
+    }
+
+    if (!this.state.archive.month) {
+
+      this.state.archive.month = this.getCurrentMonthValue();
 
     }
 
@@ -300,6 +320,23 @@ export class TemporaryPassesPage {
 
   }
 
+  async loadArchiveData() {
+    const { page, limit } = this.state.archive.pagination;
+    const skip = (page - 1) * limit;
+    const monthInfo = this.parseMonthValue(this.state.archive.month);
+    if (!monthInfo) return;
+    const params = { ...monthInfo, skip, limit };
+    if (this.state.archive.filters.gos_id) params.gos_id = this.state.archive.filters.gos_id;
+    if (this.state.archive.filters.id_org) params.id_org = this.state.archive.filters.id_org;
+    try {
+      const response = await apiGet(ENDPOINTS.temporaryPassesArchive, params);
+      this.state.archive.items = response.items || [];
+      this.state.archive.pagination.total = response.total || 0;
+    } catch (err) {
+      handleError(err);
+    }
+  }
+
 
 
 
@@ -328,6 +365,21 @@ export class TemporaryPassesPage {
 
   }
 
+  getCurrentMonthValue() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    return `${now.getFullYear()}-${month}`;
+  }
+
+  parseMonthValue(value) {
+    if (!value || !/^\d{4}-\d{2}$/.test(value)) return null;
+    const [yearStr, monthStr] = value.split("-");
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    if (!year || month < 1 || month > 12) return null;
+    return { year, month };
+  }
+
 
 
 
@@ -340,9 +392,15 @@ export class TemporaryPassesPage {
 
     await this.loadReferences();
 
+    if (this.state.tab === "archive") {
 
+      await this.loadArchiveData();
 
-    await this.loadData();
+    } else {
+
+      await this.loadData();
+
+    }
 
 
 
@@ -387,43 +445,39 @@ export class TemporaryPassesPage {
 
 
           <div class="filters single-row">
-
-
-
-            <input class="md-input" id="filter-gos" placeholder="\u041f\u043e\u0438\u0441\u043a \u043f\u043e \u0433\u043e\u0441\u043d\u043e\u043c\u0435\u0440\u0443" value="${this.state.filters.gos_id || ""}">
-
-
-
-            <select class="md-select" id="filter-status">
-
-              <option value="">\u0412\u0441\u0435 \u0441\u0442\u0430\u0442\u0443\u0441\u044b</option>
-
-              <option value="active">\u0410\u043a\u0442\u0438\u0432\u0435\u043d</option>
-
-              <option value="on_territory">\u041d\u0430 \u0442\u0435\u0440\u0440\u0438\u0442\u043e\u0440\u0438\u0438</option>
-
-              <option value="expired">\u0418\u0441\u0442\u0435\u043a</option>
-
-              <option value="revoked">\u041e\u0442\u043e\u0437\u0432\u0430\u043d</option>
-
-            </select>
-
-            ${canCreateTempPass(this.context.state.user) ? `
-
-
-
-            <button class="md-btn" id="new-temp-pass">
-
-
-
-              <span class="material-icons-round">add_circle</span>\u0412\u044b\u0434\u0430\u0442\u044c
-
-
-
-            </button>` : ""}
-
-
-
+            <div class="tabs" id="temp-pass-tabs">
+              <button class="tab ${this.state.tab === "active" ? "active" : ""}" data-tab="active">\u0416\u0443\u0440\u043d\u0430\u043b</button>
+              <button class="tab ${this.state.tab === "archive" ? "active" : ""}" data-tab="archive">\u0410\u0440\u0445\u0438\u0432</button>
+            </div>
+            <div id="temp-pass-controls-active" style="${this.state.tab === "active" ? "" : "display:none;"}">
+              <input class="md-input" id="filter-gos" placeholder="\u041f\u043e\u0438\u0441\u043a \u043f\u043e \u0433\u043e\u0441\u043d\u043e\u043c\u0435\u0440\u0443" value="${this.state.filters.gos_id || ""}">
+              <select class="md-select" id="filter-status">
+                <option value="">\u0412\u0441\u0435 \u0441\u0442\u0430\u0442\u0443\u0441\u044b</option>
+                <option value="active">\u0410\u043a\u0442\u0438\u0432\u0435\u043d</option>
+                <option value="on_territory">\u041d\u0430 \u0442\u0435\u0440\u0440\u0438\u0442\u043e\u0440\u0438\u0438</option>
+                <option value="expired">\u0418\u0441\u0442\u0435\u043a</option>
+                <option value="revoked">\u041e\u0442\u043e\u0437\u0432\u0430\u043d</option>
+              </select>
+              ${canCreateTempPass(this.context.state.user) ? `
+              <button class="md-btn" id="new-temp-pass">
+                <span class="material-icons-round">add_circle</span>\u0412\u044b\u0434\u0430\u0442\u044c
+              </button>` : ""}
+            </div>
+            <div id="temp-pass-controls-archive" style="${this.state.tab === "archive" ? "" : "display:none;"}">
+              <input type="month" class="md-input" id="archive-month" value="${this.state.archive.month || ""}">
+              <input class="md-input" id="archive-gos" placeholder="\u041f\u043e\u0438\u0441\u043a \u043f\u043e \u0433\u043e\u0441\u043d\u043e\u043c\u0435\u0440\u0443" value="${this.state.archive.filters.gos_id || ""}">
+              <select class="md-select" id="archive-org">
+                <option value="">\u0412\u0441\u0435 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438</option>
+                ${(this.state.references?.orgs || [])
+                  .map((o) => `<option value="${o.id_org}" ${String(this.state.archive.filters.id_org) === String(o.id_org) ? "selected" : ""}>${o.org_name}</option>`)
+                  .join("")}
+              </select>
+              <button class="md-btn secondary" id="archive-pdf">
+                <span class="material-icons-round">picture_as_pdf</span>\u041e\u0442\u0447\u0435\u0442 PDF
+              </button>
+              ${canArchiveTempPass(this.context.state.user) ? `
+              <button class="md-btn" id="archive-run">\u0410\u0440\u0445\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c</button>` : ""}
+            </div>
           </div>
 
 
@@ -433,6 +487,10 @@ export class TemporaryPassesPage {
 
 
         <div class="md-divider"></div>
+
+
+
+        <div id="temp-pass-panel-active" style="${this.state.tab === "active" ? "" : "display:none;"}">
 
 
 
@@ -512,6 +570,39 @@ export class TemporaryPassesPage {
 
 
 
+      </div>
+
+      <div id="temp-pass-panel-archive" style="${this.state.tab === "archive" ? "" : "display:none;"}">
+
+        <div class="table-wrap desktop-only">
+          <div class="table-scroll">
+            <table class="md-table">
+              <thead>
+                <tr>
+                  <th>Госномер</th>
+                  <th>Компания</th>
+                  <th>Создан</th>
+                  <th>Въезд</th>
+                  <th>Выезд</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody id="archive-pass-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="mobile-cards mobile-only" id="archive-pass-cards"></div>
+        <div class="pagination" id="archive-pass-pagination">
+          <button class="md-btn ghost" data-page="prev">Назад</button>
+          <div class="pagination-info" id="archive-pass-page-info"></div>
+          <button class="md-btn ghost" data-page="next">Вперёд</button>
+        </div>
+
+      </div>
+
+
+
+
           <button class="md-btn ghost" data-page="next">Вперёд</button>
 
 
@@ -532,11 +623,13 @@ export class TemporaryPassesPage {
 
 
 
-    this.renderRows(node.querySelector("#temp-pass-rows"));
-
-
-
-    this.renderPagination(node);
+    if (this.state.tab === "archive") {
+      this.renderArchiveRows(node.querySelector("#archive-pass-rows"));
+      this.renderArchivePagination(node);
+    } else {
+      this.renderRows(node.querySelector("#temp-pass-rows"));
+      this.renderPagination(node);
+    }
 
 
 
@@ -545,12 +638,10 @@ export class TemporaryPassesPage {
 
 
     const statusSelect = node.querySelector("#filter-status");
-
-
-
     if (statusSelect) statusSelect.value = this.state.filters.status || "";
 
-
+    const archiveOrgSelect = node.querySelector("#archive-org");
+    if (archiveOrgSelect) archiveOrgSelect.value = this.state.archive.filters.id_org || "";
 
     this.updateOrgInfo(node, this.state.filters.id_org);
 
@@ -810,6 +901,86 @@ export class TemporaryPassesPage {
 
   }
 
+  getArchiveTotalPages() {
+    const { limit, total } = this.state.archive.pagination;
+    if (!total) return 1;
+    return Math.max(1, Math.ceil(total / limit));
+  }
+
+  renderArchivePagination(node) {
+    const info = node.querySelector("#archive-pass-page-info");
+    const prevBtn = node.querySelector("#archive-pass-pagination [data-page='prev']");
+    const nextBtn = node.querySelector("#archive-pass-pagination [data-page='next']");
+    const { page, total } = this.state.archive.pagination;
+    const totalPages = this.getArchiveTotalPages();
+    if (info) {
+      info.textContent = `\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430 ${Math.min(page, totalPages)} \u0438\u0437 ${totalPages} \u2022 \u0412\u0441\u0435\u0433\u043e: ${total}`;
+    }
+    if (prevBtn) prevBtn.disabled = page <= 1;
+    if (nextBtn) nextBtn.disabled = page >= totalPages || total === 0;
+  }
+
+  renderArchiveRows(tbody) {
+    const cards = this.host?.querySelector("#archive-pass-cards");
+    if (!this.state.archive.items.length) {
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty">\u0410\u0440\u0445\u0438\u0432 \u0437\u0430 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0439 \u043c\u0435\u0441\u044f\u0446 \u043f\u0443\u0441\u0442</div></td></tr>`;
+      }
+      if (cards) {
+        cards.innerHTML = `<div class="empty">\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445</div>`;
+      }
+      return;
+    }
+    if (tbody) {
+      tbody.innerHTML = this.state.archive.items
+        .map(
+          (p) => `
+            <tr data-id="${p.id}">
+              <td><strong>${p.gos_id}</strong><br><span class="tag">#${p.temp_pass_id}</span></td>
+              <td>${p.org_name || "-"}</td>
+              <td>${this.formatDateTime(p.created_at)}</td>
+              <td>${this.formatDateTime(p.entered_at)}</td>
+              <td>${this.formatDateTime(p.exited_at)}</td>
+              <td>${renderStatusChip(p.status)}</td>
+            </tr>
+          `
+        )
+        .join("");
+    }
+    if (cards) {
+      this.renderArchiveCards(cards, this.state.archive.items);
+    }
+  }
+
+  renderArchiveCards(container, items) {
+    if (!container) return;
+    if (!items.length) {
+      container.innerHTML = `<div class="empty">\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445</div>`;
+      return;
+    }
+    container.innerHTML = items
+      .map((p) => {
+        return `
+          <div class="mobile-card">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${p.gos_id}</div>
+                <div class="mobile-card-subtitle">#${p.temp_pass_id}</div>
+              </div>
+              <div>${renderStatusChip(p.status)}</div>
+            </div>
+            <div class="mobile-card-meta">
+              <div class="mobile-card-row"><span>\u041a\u043e\u043c\u043f\u0430\u043d\u0438\u044f</span><span>${p.org_name || "-"}</span></div>
+              <div class="mobile-card-row"><span>\u0421\u043e\u0437\u0434\u0430\u043d</span><span>${this.formatDateTime(p.created_at)}</span></div>
+              <div class="mobile-card-row"><span>\u0412\u044a\u0435\u0437\u0434</span><span>${this.formatDateTime(p.entered_at)}</span></div>
+              <div class="mobile-card-row"><span>\u0412\u044b\u0435\u0437\u0434</span><span>${this.formatDateTime(p.exited_at)}</span></div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
 
 
   renderCards(container, passes) {
@@ -930,6 +1101,42 @@ export class TemporaryPassesPage {
 
     };
 
+    const applyArchiveFilters = async () => {
+      const gos_id = node.querySelector("#archive-gos")?.value || "";
+      const id_org = node.querySelector("#archive-org")?.value || "";
+      this.state.archive.filters = { gos_id, id_org };
+      this.state.archive.pagination.page = 1;
+      await this.loadArchiveData();
+      this.renderArchiveRows(node.querySelector("#archive-pass-rows"));
+      this.renderArchivePagination(node);
+    };
+
+    const setTab = async (tab) => {
+      if (this.state.tab === tab) return;
+      this.state.tab = tab;
+      node.querySelectorAll("#temp-pass-tabs .tab").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.tab === tab);
+      });
+      const activePanel = node.querySelector("#temp-pass-panel-active");
+      const archivePanel = node.querySelector("#temp-pass-panel-archive");
+      const activeControls = node.querySelector("#temp-pass-controls-active");
+      const archiveControls = node.querySelector("#temp-pass-controls-archive");
+      if (activePanel) activePanel.style.display = tab === "active" ? "" : "none";
+      if (archivePanel) archivePanel.style.display = tab === "archive" ? "" : "none";
+      if (activeControls) activeControls.style.display = tab === "active" ? "" : "none";
+      if (archiveControls) archiveControls.style.display = tab === "archive" ? "" : "none";
+
+      if (tab === "archive") {
+        await this.loadArchiveData();
+        this.renderArchiveRows(node.querySelector("#archive-pass-rows"));
+        this.renderArchivePagination(node);
+      } else {
+        await this.loadData();
+        this.renderRows(node.querySelector("#temp-pass-rows"));
+        this.renderPagination(node);
+      }
+    };
+
 
 
 
@@ -971,6 +1178,45 @@ export class TemporaryPassesPage {
     node.querySelector("#filter-status")?.addEventListener("change", scheduleApply);
 
 
+
+    node.querySelector("#temp-pass-tabs")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-tab]");
+      if (!btn) return;
+      await setTab(btn.dataset.tab);
+    });
+
+    const scheduleArchiveApply = () => {
+      if (this.searchTimer) clearTimeout(this.searchTimer);
+      this.searchTimer = setTimeout(async () => {
+        await applyArchiveFilters();
+      }, 350);
+    };
+
+    node.querySelector("#archive-gos")?.addEventListener("input", scheduleArchiveApply);
+    node.querySelector("#archive-org")?.addEventListener("change", scheduleArchiveApply);
+    node.querySelector("#archive-month")?.addEventListener("change", async (e) => {
+      this.state.archive.month = e.target.value;
+      this.state.archive.pagination.page = 1;
+      await applyArchiveFilters();
+    });
+
+    node.querySelector("#archive-pdf")?.addEventListener("click", async () => {
+      const info = this.parseMonthValue(this.state.archive.month);
+      if (!info) {
+        toast.show("\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043c\u0435\u0441\u044f\u0446", "error");
+        return;
+      }
+      try {
+        await openFileInNewTab(`${ENDPOINTS.temporaryPassesArchiveReport}?year=${info.year}&month=${info.month}`);
+        toast.show("PDF \u043e\u0442\u043a\u0440\u044b\u0442", "success");
+      } catch (err) {
+        handleError(err);
+      }
+    });
+
+    node.querySelector("#archive-run")?.addEventListener("click", async () => {
+      await this.confirmArchiveMonth();
+    });
 
 
 
@@ -1308,6 +1554,23 @@ export class TemporaryPassesPage {
 
 
 
+    });
+
+    node.querySelector("#archive-pass-pagination")?.addEventListener("click", async (e) => {
+      if (this.state.tab !== "archive") return;
+      const btn = e.target.closest("button[data-page]");
+      if (!btn) return;
+      const totalPages = this.getArchiveTotalPages();
+      if (btn.dataset.page === "prev" && this.state.archive.pagination.page > 1) {
+        this.state.archive.pagination.page -= 1;
+      }
+      if (btn.dataset.page === "next" && this.state.archive.pagination.page < totalPages) {
+        this.state.archive.pagination.page += 1;
+      }
+      await this.loadArchiveData();
+      this.renderArchiveRows(node.querySelector("#archive-pass-rows"));
+      this.renderArchivePagination(node);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
 
@@ -1964,6 +2227,38 @@ export class TemporaryPassesPage {
 
 
 
+  }
+
+  confirmArchiveMonth() {
+    const info = this.parseMonthValue(this.state.archive.month);
+    if (!info) {
+      toast.show("\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043c\u0435\u0441\u044f\u0446", "error");
+      return;
+    }
+    const label = `${info.year}-${String(info.month).padStart(2, "0")}`;
+    const content = document.createElement("div");
+    content.className = "section";
+    content.innerHTML = `
+      <p>\u0410\u0440\u0445\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430 \u0437\u0430 ${label}? \u0417\u0430\u043f\u0438\u0441\u0438 \u0431\u0443\u0434\u0443\u0442 \u0443\u0434\u0430\u043b\u0435\u043d\u044b \u0438\u0437 \u0442\u0435\u043a\u0443\u0449\u0435\u0433\u043e \u0440\u0435\u0435\u0441\u0442\u0440\u0430.</p>
+      <div class="modal-footer">
+        <button type="button" class="md-btn ghost" id="cancel-archive-month">\u041e\u0442\u043c\u0435\u043d\u0430</button>
+        <button type="button" class="md-btn" id="confirm-archive-month">\u0410\u0440\u0445\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u0442\u044c</button>
+      </div>
+    `;
+    const instance = modal.show({ title: "\u0410\u0440\u0445\u0438\u0432", content });
+    content.querySelector("#cancel-archive-month")?.addEventListener("click", () => instance.close());
+    content.querySelector("#confirm-archive-month")?.addEventListener("click", async () => {
+      try {
+        await apiPost(`${ENDPOINTS.temporaryPassesArchiveMonth}?year=${info.year}&month=${info.month}`, {});
+        toast.show("\u0410\u0440\u0445\u0438\u0432 \u0441\u0444\u043e\u0440\u043c\u0438\u0440\u043e\u0432\u0430\u043d", "success");
+        instance.close();
+        await this.loadArchiveData();
+        this.renderArchiveRows(document.querySelector("#archive-pass-rows"));
+        this.renderArchivePagination(document);
+      } catch (err) {
+        handleError(err);
+      }
+    });
   }
 
 

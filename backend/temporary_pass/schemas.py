@@ -48,3 +48,39 @@ class TemporaryPassListResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class TemporaryPassArchiveResponse(BaseModel):
+    id: int
+    temp_pass_id: int
+    gos_id: str
+    id_org: int
+    phone: Optional[str] = None
+    comment: Optional[str] = None
+    valid_from: datetime
+    valid_until: datetime
+    created_by: int
+    created_at: datetime
+    revoked_at: Optional[datetime] = None
+    revoked_by: Optional[int] = None
+    entered_at: Optional[datetime] = None
+    exited_at: Optional[datetime] = None
+    entered_by: Optional[int] = None
+    exited_by: Optional[int] = None
+    status: str
+    archived_at: datetime
+    archived_by: int
+
+    org_name: Optional[str] = None
+    creator_name: Optional[str] = None
+    exited_by_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TemporaryPassArchiveListResponse(BaseModel):
+    items: List[TemporaryPassArchiveResponse]
+    total: int
+    skip: int
+    limit: int

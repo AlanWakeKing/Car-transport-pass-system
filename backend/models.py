@@ -252,6 +252,37 @@ class TemporaryPass(Base):
             return "on_territory"
         return "active"
 
+# 11. Temporary pass archive
+class TemporaryPassArchive(Base):
+    __tablename__ = "temporary_pass_archive"
+
+    id = Column(Integer, primary_key=True, index=True)
+    temp_pass_id = Column(Integer, nullable=False, index=True)
+    gos_id = Column(String(20), nullable=False, index=True)
+    id_org = Column(Integer, ForeignKey("organiz.id_org"), nullable=False, index=True)
+    phone = Column(String(30))
+    valid_from = Column(DateTime(timezone=True), nullable=False)
+    valid_until = Column(DateTime(timezone=True), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_at = Column(DateTime(timezone=True))
+    revoked_by = Column(Integer, ForeignKey("users.id"))
+    entered_at = Column(DateTime(timezone=True))
+    exited_at = Column(DateTime(timezone=True))
+    entered_by = Column(Integer, ForeignKey("users.id"))
+    exited_by = Column(Integer, ForeignKey("users.id"))
+    comment = Column(Text)
+    status = Column(String(20), nullable=False)
+    archived_at = Column(DateTime(timezone=True), server_default=func.now())
+    archived_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    organization = relationship("Organiz")
+    creator = relationship("User", foreign_keys=[created_by])
+    revoker = relationship("User", foreign_keys=[revoked_by])
+    enterer = relationship("User", foreign_keys=[entered_by])
+    exiter = relationship("User", foreign_keys=[exited_by])
+    archiver = relationship("User", foreign_keys=[archived_by])
+
 # 11. Temporary pass PDF templates
 class TemporaryPassTemplate(Base):
     __tablename__ = "temporary_pass_template"
